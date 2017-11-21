@@ -61,6 +61,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 
+import Command.HY_Command;
 import USB.HY_USB;
 
 /*
@@ -78,10 +79,10 @@ public class HY_UI {
 	private final String N4375_PANEL = "N4375";// 64-key
 	private final String N4374_PANEL = "N4374";// Compact Alpha
 	
-	private final int KB_N4375 = 0;
-	private final int KB_N4374 = 1;
+	public static final int KB_N4375 = 0;
+	public static final int KB_N4374 = 1;
 	
-	private int selected_kb = KB_N4375;
+	private int selected_kb = KB_N4375, kb_hid_size = HY_USB.NCR_N4375_HID_SIZE;
 	
 	private byte[] keymap_buf = new byte[400];
 	
@@ -121,7 +122,7 @@ public class HY_UI {
 		Locale.setDefault(Locale.ENGLISH); 
 		
         jframe = new JFrame("NCR Ver1.00");
-        jframe.setSize(900, 600);
+        jframe.setSize(850, 500);
         jframe.setResizable(false);
 		
 		/*Toolkit tk= Toolkit.getDefaultToolkit();  
@@ -193,18 +194,6 @@ public class HY_UI {
             		JOptionPane.showMessageDialog(jframe, "USB init ret=" + init_usb);
             	
             	hyUSB.usb_Close();
-            	
-            	
-            	/*
-            	HY_USB hyUSB = new HY_USB();
-            	
-            	int init_usb = hyUSB.init_USB_Device(HY_USB.NCR_N4375_HID_SIZE); 
-            	if(init_usb == 0){
-            		JOptionPane.showMessageDialog(jframe, hyUSB.get_Firmware());
-            	}else
-            		JOptionPane.showMessageDialog(jframe, "USB init ret=" + init_usb);
-            	
-            	hyUSB.usb_Close();*/
             }
         });
         jmDiagnostic.add(miGetVersion);   
@@ -223,7 +212,11 @@ public class HY_UI {
 			@Override
 			public void stateChanged(ChangeEvent arg0) {
 				// TODO Auto-generated method stub
-				selected_kb = jTabbedPane.getSelectedIndex();								
+				selected_kb = jTabbedPane.getSelectedIndex();
+				if(selected_kb == KB_N4375)
+					kb_hid_size = HY_USB.NCR_N4375_HID_SIZE;
+				else if(selected_kb == KB_N4374)
+					kb_hid_size = HY_USB.NCR_N4374_HID_SIZE;
 			}
         	
         });
@@ -305,12 +298,11 @@ public class HY_UI {
 		
 	}*/
 	
-	private void init_SetKeyCode(String key_index) {
-		JFrame jfKeycode = null;
+	private void UI_SetKeyCode(String key_index) {
+		final JFrame jfKeycode = new JFrame(key_index);
 		
 		jframe.setEnabled(false);
-		
-		jfKeycode = new JFrame(key_index);
+
 		jfKeycode.setSize(700, 500);
 		jfKeycode.setLayout(null);
 		
@@ -420,7 +412,10 @@ public class HY_UI {
 		{
 			  public void actionPerformed(ActionEvent e)
 			  {
-				  System.out.println("Cancel");
+					jfKeycode.dispose();
+					
+					jframe.setEnabled(true);
+					jframe.requestFocus();
 			  }
 		});
 		jfKeycode.add(bntCancel);
@@ -470,6 +465,15 @@ public class HY_UI {
 	
 	}
 	
+	
+	private JRadioButton jbSolicited,jbUnsolicited,jbCalculator,jbTelephone,jbDoubleKeyEnable,
+						 jbDoubleKeyDisable,jbSpeakerSoundEnable,jbSpeakerSoundDisable,
+						 jbKeyLockLUnlock,jbKeyLockLLock,jbCADprotectionEnable,jbCADprotectionDisable,
+						 jbKeyLockDataModeHID,jbKeyLockDataModeEmulation,
+						 jbMSRDataModeHID,jbMSRDataModeEmulation;
+	private JTextField tfKeylockVolume,tfErrorToneVolume,tfKeyclickFre,tfErrorToneFre,
+					   tfKeyclickDuration,tfErrorToneDuration;
+	
 	private JPanel N4375_KB_Cfg_Page1() {
 		int size_height = 20;
 		JPanel jp = new JPanel();
@@ -482,10 +486,10 @@ public class HY_UI {
 		labKeylockDataMode.setBounds(10, 10, 200, size_height);
 		jp.add(labKeylockDataMode);
 		
-		JRadioButton jbSolicited = new JRadioButton("Solicited");
+		jbSolicited = new JRadioButton("Solicited");
 		jbSolicited.setBounds(250, 10, 100, size_height);		
 		jp.add(jbSolicited);
-	    JRadioButton jbUnsolicited = new JRadioButton("Unsolicited");
+	    jbUnsolicited = new JRadioButton("Unsolicited");
 	    jbUnsolicited.setBounds(350, 10, 100, size_height);
 	    jp.add(jbUnsolicited);
 	    ButtonGroup jbgKeylock = new ButtonGroup();	    
@@ -503,20 +507,17 @@ public class HY_UI {
         };
         jbSolicited.addActionListener(alKeylock);
         jbUnsolicited.addActionListener(alKeylock);
-        if((keymap_buf[1] & 0x01) == 0x01){
-        	jbUnsolicited.setSelected(true);
-        }else
-        	jbSolicited.setSelected(true);
+        
         
         //--------------------------------------------------------------------
         JLabel labNumericKeypadLayout = new JLabel("Numeric keypad layout");
         labNumericKeypadLayout.setBounds(10, 10 + size_height, 200, size_height);
 		jp.add(labNumericKeypadLayout);
         
-        JRadioButton jbCalculator = new JRadioButton("Calculator");
+        jbCalculator = new JRadioButton("Calculator");
         jbCalculator.setBounds(250, 10 + size_height, 100, size_height);		
 		jp.add(jbCalculator);
-	    JRadioButton jbTelephone = new JRadioButton("Telephone");
+	    jbTelephone = new JRadioButton("Telephone");
 	    jbTelephone.setBounds(350, 10 + size_height, 100, size_height);
 	    jp.add(jbTelephone);
 	    ButtonGroup jbgNumeric = new ButtonGroup();	    
@@ -533,21 +534,17 @@ public class HY_UI {
             }
         };
         jbCalculator.addActionListener(alNumeric);
-        jbTelephone.addActionListener(alNumeric);
-        if((keymap_buf[0x11] & 0x01) == 0x01){
-        	jbTelephone.setSelected(true);
-        }else
-        	jbCalculator.setSelected(true); 
+        jbTelephone.addActionListener(alNumeric);                 
         
         //--------------------------------------------------------------------
         JLabel labDoubleKeyErrorDetection = new JLabel("Double key error detection");
         labDoubleKeyErrorDetection.setBounds(10, 10 + 2*size_height, 200, size_height);
 		jp.add(labDoubleKeyErrorDetection);
         
-        JRadioButton jbDoubleKeyEnable = new JRadioButton("Enable");
+        jbDoubleKeyEnable = new JRadioButton("Enable");
         jbDoubleKeyEnable.setBounds(250, 10 + 2*size_height, 100, size_height);		
 		jp.add(jbDoubleKeyEnable);
-	    JRadioButton jbDoubleKeyDisable = new JRadioButton("Disable");
+	    jbDoubleKeyDisable = new JRadioButton("Disable");
 	    jbDoubleKeyDisable.setBounds(350, 10 + 2*size_height, 100, size_height);
 	    jp.add(jbDoubleKeyDisable);
 	    ButtonGroup jbgDoubleKey = new ButtonGroup();	    
@@ -564,21 +561,17 @@ public class HY_UI {
             }
         };
         jbDoubleKeyEnable.addActionListener(alDoubleKey);
-        jbDoubleKeyDisable.addActionListener(alDoubleKey);
-        if((keymap_buf[0x11] & 0x08) == 0x08){
-        	jbDoubleKeyDisable.setSelected(true);
-        }else
-        	jbDoubleKeyEnable.setSelected(true);         
+        jbDoubleKeyDisable.addActionListener(alDoubleKey);        
 	    
         //--------------------------------------------------------------------
         JLabel labSpeakerSound = new JLabel("Speaker Sound");
         labSpeakerSound.setBounds(10, 10 + 3*size_height, 200, size_height);
 		jp.add(labSpeakerSound);
         
-        JRadioButton jbSpeakerSoundEnable = new JRadioButton("Enable");
+        jbSpeakerSoundEnable = new JRadioButton("Enable");
         jbSpeakerSoundEnable.setBounds(250, 10 + 3*size_height, 100, size_height);		
 		jp.add(jbSpeakerSoundEnable);
-	    JRadioButton jbSpeakerSoundDisable = new JRadioButton("Disable");
+	    jbSpeakerSoundDisable = new JRadioButton("Disable");
 	    jbSpeakerSoundDisable.setBounds(350, 10 + 3*size_height, 100, size_height);
 	    jp.add(jbSpeakerSoundDisable);
 	    ButtonGroup jbgSpeakerSound = new ButtonGroup();	    
@@ -595,22 +588,17 @@ public class HY_UI {
             }
         };
         jbSpeakerSoundEnable.addActionListener(alSpeakerSound);
-        jbSpeakerSoundDisable.addActionListener(alSpeakerSound);
-        if((keymap_buf[0x01] & 0x80) == 0x80){
-        	jbSpeakerSoundEnable.setSelected(true);
-        }else
-        	jbSpeakerSoundDisable.setSelected(true);
-        
+        jbSpeakerSoundDisable.addActionListener(alSpeakerSound);       
         
         //--------------------------------------------------------------------
         JLabel labKeyLockL = new JLabel("KBD lock on Keylock 'L' Position");
         labKeyLockL.setBounds(10, 10 + 4*size_height, 200, size_height);
 		jp.add(labKeyLockL);
-        
-        JRadioButton jbKeyLockLUnlock = new JRadioButton("Unlock");
+		
+        jbKeyLockLUnlock = new JRadioButton("Unlock");
         jbKeyLockLUnlock.setBounds(250, 10 + 4*size_height, 100, size_height);		
 		jp.add(jbKeyLockLUnlock);
-	    JRadioButton jbKeyLockLLock = new JRadioButton("Lock");
+	    jbKeyLockLLock = new JRadioButton("Lock");
 	    jbKeyLockLLock.setBounds(350, 10 + 4*size_height, 100, size_height);
 	    jp.add(jbKeyLockLLock);
 	    ButtonGroup jbgKeyLockL = new ButtonGroup();	    
@@ -628,20 +616,16 @@ public class HY_UI {
         };
         jbKeyLockLUnlock.addActionListener(alKeyLockL);
         jbKeyLockLLock.addActionListener(alKeyLockL);
-        if((keymap_buf[0x01] & 0x02) == 0x02){
-        	jbKeyLockLLock.setSelected(true);
-        }else
-        	jbKeyLockLUnlock.setSelected(true);
-        
+      
       //--------------------------------------------------------------------
         JLabel labCADprotection = new JLabel("Ctrl,Alt,Del protection");
         labCADprotection.setBounds(10, 10 + 5*size_height, 200, size_height);
 		jp.add(labCADprotection);
-        
-        JRadioButton jbCADprotectionEnable = new JRadioButton("Enable");
+		
+        jbCADprotectionEnable = new JRadioButton("Enable");
         jbCADprotectionEnable.setBounds(250, 10 + 5*size_height, 100, size_height);		
 		jp.add(jbCADprotectionEnable);
-	    JRadioButton jbCADprotectionDisable = new JRadioButton("Disabel");
+	    jbCADprotectionDisable = new JRadioButton("Disabel");
 	    jbCADprotectionDisable.setBounds(350, 10 + 5*size_height, 100, size_height);
 	    jp.add(jbCADprotectionDisable);
 	    ButtonGroup jbgCADprotection = new ButtonGroup();	    
@@ -659,20 +643,16 @@ public class HY_UI {
         };
         jbCADprotectionEnable.addActionListener(alCADprotection);
         jbCADprotectionDisable.addActionListener(alCADprotection);
-        if((keymap_buf[0x10] & 0x02) == 0x02){
-        	jbCADprotectionEnable.setSelected(true);
-        }else
-        	jbCADprotectionDisable.setSelected(true);
         
       //--------------------------------------------------------------------
         JLabel labKeyLockDataMode = new JLabel("Keylock data mode");
         labKeyLockDataMode.setBounds(10, 10 + 6*size_height, 200, size_height);
 		jp.add(labKeyLockDataMode);
-        
-        JRadioButton jbKeyLockDataModeHID = new JRadioButton("HID");
+		
+        jbKeyLockDataModeHID = new JRadioButton("HID");
         jbKeyLockDataModeHID.setBounds(250, 10 + 6*size_height, 100, size_height);		
 		jp.add(jbKeyLockDataModeHID);
-	    JRadioButton jbKeyLockDataModeEmulation = new JRadioButton("Emulation");
+	    jbKeyLockDataModeEmulation = new JRadioButton("Emulation");
 	    jbKeyLockDataModeEmulation.setBounds(350, 10 + 6*size_height, 100, size_height);
 	    jp.add(jbKeyLockDataModeEmulation);
 	    ButtonGroup jbgKeyLockDataMode = new ButtonGroup();	    
@@ -690,21 +670,16 @@ public class HY_UI {
         };
         jbKeyLockDataModeHID.addActionListener(alKeyLockDataMode);
         jbKeyLockDataModeEmulation.addActionListener(alKeyLockDataMode);
-        if((keymap_buf[0x10] & 0x08) == 0x08){
-        	jbKeyLockDataModeEmulation.setSelected(true);
-        }else
-        	jbKeyLockDataModeHID.setSelected(true);
-        
-        
+   
       //--------------------------------------------------------------------
         JLabel labMSRDataMode = new JLabel("MSR data mode");
         labMSRDataMode.setBounds(10, 10 + 7*size_height, 200, size_height);
 		jp.add(labMSRDataMode);
-        
-        JRadioButton jbMSRDataModeHID = new JRadioButton("HID");
+		
+        jbMSRDataModeHID = new JRadioButton("HID");
         jbMSRDataModeHID.setBounds(250, 10 + 7*size_height, 100, size_height);		
 		jp.add(jbMSRDataModeHID);
-	    JRadioButton jbMSRDataModeEmulation = new JRadioButton("Emulation");
+	    jbMSRDataModeEmulation = new JRadioButton("Emulation");
 	    jbMSRDataModeEmulation.setBounds(350, 10 + 7*size_height, 100, size_height);
 	    jp.add(jbMSRDataModeEmulation);
 	    ButtonGroup jbgMSRDataMode = new ButtonGroup();	    
@@ -722,22 +697,17 @@ public class HY_UI {
         };
         jbMSRDataModeHID.addActionListener(alMSRDataMode);
         jbMSRDataModeEmulation.addActionListener(alMSRDataMode);
-        if((keymap_buf[0x10] & 0x10) == 0x10){
-        	jbMSRDataModeEmulation.setSelected(true);
-        }else
-        	jbMSRDataModeHID.setSelected(true);
-        
+    
       //--------------------------------------------------------------------
         JLabel labKeyClickVolume = new JLabel("Keyclick volume");
         labKeyClickVolume.setBounds(10, 30 + 8*size_height, 200, size_height - 5);
 		jp.add(labKeyClickVolume);
 		
-		JTextField tfKeylockVolume =  new JTextField();
+		tfKeylockVolume =  new JTextField();
 		tfKeylockVolume.setBounds(180, 30 + 8*size_height, 50, size_height - 5);
 		LimitedDocument ldKeylockVolume = new LimitedDocument(2);
 		ldKeylockVolume.setAllowChar("0123456789");
-		tfKeylockVolume.setDocument(ldKeylockVolume);
-		tfKeylockVolume.setText(String.valueOf(keymap_buf[0x03] & 0x0F));
+		tfKeylockVolume.setDocument(ldKeylockVolume);		
 		jp.add(tfKeylockVolume);
         
 		JLabel labKeylockVolumeValue = new JLabel("(0 ~ 15)");
@@ -749,12 +719,11 @@ public class HY_UI {
         labErrorToneVolume.setBounds(10, 30 + 9*size_height, 200, size_height - 5);
 		jp.add(labErrorToneVolume);
 		
-		JTextField tfErrorToneVolume =  new JTextField();
+		tfErrorToneVolume =  new JTextField();
 		tfErrorToneVolume.setBounds(180, 30 + 9*size_height, 50, size_height - 5);
 		LimitedDocument ldErrorToneVolume = new LimitedDocument(2);
 		ldErrorToneVolume.setAllowChar("0123456789");
 		tfErrorToneVolume.setDocument(ldErrorToneVolume);
-		tfErrorToneVolume.setText(String.valueOf((keymap_buf[0x03] >> 4) & 0x0F));
 		jp.add(tfErrorToneVolume);
         
 		JLabel labErrorToneVolumeValue = new JLabel("(0 ~ 15)");
@@ -766,12 +735,11 @@ public class HY_UI {
         labKeyclickFre.setBounds(10, 30 + 10*size_height, 200, size_height - 5);
 		jp.add(labKeyclickFre);
 		
-		JTextField tfKeyclickFre =  new JTextField();
+		tfKeyclickFre =  new JTextField();
 		tfKeyclickFre.setBounds(180, 30 + 10*size_height, 50, size_height - 5);
 		LimitedDocument ldKeyclickFre = new LimitedDocument(3);
 		ldKeyclickFre.setAllowChar("0123456789");
 		tfKeyclickFre.setDocument(ldKeyclickFre);
-		tfKeyclickFre.setText(String.valueOf(keymap_buf[0x04]));
 		jp.add(tfKeyclickFre);
         
 		JLabel labKeyclickFreValue = new JLabel("(0 ~ 127)");
@@ -783,12 +751,11 @@ public class HY_UI {
         labErrorToneFre.setBounds(10, 30 + 11*size_height, 200, size_height - 5);
 		jp.add(labErrorToneFre);
 		
-		JTextField tfErrorToneFre =  new JTextField();
+		tfErrorToneFre =  new JTextField();
 		tfErrorToneFre.setBounds(180, 30 + 11*size_height, 50, size_height - 5);
 		LimitedDocument ldErrorToneFre = new LimitedDocument(3);
 		ldErrorToneFre.setAllowChar("0123456789");
 		tfErrorToneFre.setDocument(ldErrorToneFre);
-		tfErrorToneFre.setText(String.valueOf(keymap_buf[0x05]));
 		jp.add(tfErrorToneFre);
         
 		JLabel labErrorToneFreValue = new JLabel("(0 ~ 127)");
@@ -800,12 +767,11 @@ public class HY_UI {
         labKeyclickDuration.setBounds(10, 30 + 12*size_height, 200, size_height - 5);
 		jp.add(labKeyclickDuration);
 		
-		JTextField tfKeyclickDuration =  new JTextField();
+		tfKeyclickDuration =  new JTextField();
 		tfKeyclickDuration.setBounds(180, 30 + 12*size_height, 50, size_height - 5);
 		LimitedDocument ldKeyclickDuration = new LimitedDocument(3);
 		ldKeyclickDuration.setAllowChar("0123456789");
 		tfKeyclickDuration.setDocument(ldKeyclickDuration);
-		tfKeyclickDuration.setText(String.valueOf(keymap_buf[0x06]));
 		jp.add(tfKeyclickDuration);
         
 		JLabel labKeyclickDurationValue = new JLabel("(0 ~ 255)");
@@ -817,19 +783,75 @@ public class HY_UI {
         labErrorToneDuration.setBounds(10, 30 + 13*size_height, 200, size_height - 5);
 		jp.add(labErrorToneDuration);
 		
-		JTextField tfErrorToneDuration =  new JTextField();
+		tfErrorToneDuration =  new JTextField();
 		tfErrorToneDuration.setBounds(180, 30 + 13*size_height, 50, size_height - 5);
 		LimitedDocument ldErrorToneDuration = new LimitedDocument(3);
 		ldErrorToneDuration.setAllowChar("0123456789");
 		tfErrorToneDuration.setDocument(ldErrorToneDuration);
-		tfErrorToneDuration.setText(String.valueOf(keymap_buf[0x07]));
 		jp.add(tfErrorToneDuration);
         
 		JLabel labErrorToneDurationValue = new JLabel("(0 ~ 255)");
 		labErrorToneDurationValue.setBounds(240, 30 + 13*size_height, 200, size_height - 5);
-		jp.add(labErrorToneDurationValue);
+		jp.add(labErrorToneDurationValue);	
+		
+		N4375_Update_KB_CFG_UI();
 		
 		return jp;
+	}
+	
+	private void N4375_Update_KB_CFG_UI(){
+		
+		//Page 1
+        if((keymap_buf[1] & 0x01) == 0x01){
+        	jbUnsolicited.setSelected(true);
+        }else
+        	jbSolicited.setSelected(true);
+        
+        if((keymap_buf[0x11] & 0x01) == 0x01){
+        	jbTelephone.setSelected(true);
+        }else
+        	jbCalculator.setSelected(true);
+        
+        if((keymap_buf[0x11] & 0x08) == 0x08){
+        	jbDoubleKeyDisable.setSelected(true);
+        }else
+        	jbDoubleKeyEnable.setSelected(true); 
+        
+        if((keymap_buf[0x01] & 0x80) == 0x80){
+        	jbSpeakerSoundEnable.setSelected(true);
+        }else
+        	jbSpeakerSoundDisable.setSelected(true);
+        
+        if((keymap_buf[0x01] & 0x02) == 0x02){
+        	jbKeyLockLLock.setSelected(true);
+        }else
+        	jbKeyLockLUnlock.setSelected(true);
+        
+        if((keymap_buf[0x10] & 0x02) == 0x02){
+        	jbCADprotectionEnable.setSelected(true);
+        }else
+        	jbCADprotectionDisable.setSelected(true);
+        
+        if((keymap_buf[0x10] & 0x08) == 0x08){
+        	jbKeyLockDataModeEmulation.setSelected(true);
+        }else
+        	jbKeyLockDataModeHID.setSelected(true);
+        
+        if((keymap_buf[0x10] & 0x10) == 0x10){
+        	jbMSRDataModeEmulation.setSelected(true);
+        }else
+        	jbMSRDataModeHID.setSelected(true);
+        
+        System.out.println("keymap_buf[0x03]=" + keymap_buf[0x03]);
+        
+		tfKeylockVolume.setText(String.valueOf(keymap_buf[0x03] & 0x0F));
+		tfErrorToneVolume.setText(String.valueOf((keymap_buf[0x03] >> 4) & 0x0F));
+		tfKeyclickFre.setText(String.valueOf(keymap_buf[0x04]));
+		tfErrorToneFre.setText(String.valueOf(keymap_buf[0x05]));
+		tfKeyclickDuration.setText(String.valueOf(keymap_buf[0x06]));
+		tfErrorToneDuration.setText(String.valueOf(keymap_buf[0x07]));
+		
+		//Page 2
 	}
 	
 	private void N4375_Keyboard_Configuration(){
@@ -891,16 +913,14 @@ public class HY_UI {
 		});
         
         jTabbedPane.add("Page 1", N4375_KB_Cfg_Page1());
-        jTabbedPane.add("Page 2", N4375_KB_Cfg_Page1());
+        //jTabbedPane.add("Page 2", N4375_KB_Cfg_Page1());
         jTabbedPane.setBounds(0, 0, jfKbCfg.getWidth(), jfKbCfg.getHeight() - 200);
         jTabbedPane.addChangeListener(new ChangeListener() {
-
 			@Override
 			public void stateChanged(ChangeEvent arg0) {
 				// TODO Auto-generated method stub
-				selected_kb = jTabbedPane.getSelectedIndex();								
-			}
-        	
+										
+			}        	
         });
         jfKbCfg.add(jTabbedPane);
         
@@ -913,8 +933,17 @@ public class HY_UI {
 		{
 			  public void actionPerformed(ActionEvent e)
 			  {
-				  //System.out.println("OK");
-				  bntSet.setEnabled(true);
+				  HY_Command hyCommand = new HY_Command(kb_hid_size);
+				  byte[] rev_data = new byte[kb_hid_size];
+				  if(hyCommand.Get_Keyboard_Configuration(rev_data)){
+					  System.arraycopy(rev_data, 1, keymap_buf, 0, 0x16);
+					  
+					  N4375_Update_KB_CFG_UI();
+					  
+					  bntSet.setEnabled(true);
+				  }else{
+					  JOptionPane.showMessageDialog(jfKbCfg, "Fail to connect to the USB keyboard.");					  
+				  }
 			  }
 		});
 		jfKbCfg.add(bntGet);		
@@ -928,7 +957,7 @@ public class HY_UI {
 			  }
 		});
 		bntSet.setEnabled(false);
-		jfKbCfg.add(bntSet);
+		jfKbCfg.add(bntSet);		
         
         jframe.setEnabled(false);
 	}
@@ -936,7 +965,7 @@ public class HY_UI {
 	private JPanel init_N4374() {//Compact Alpha
 		int i, j;
 		
-		HY_JPanel GImage = new HY_JPanel("pics\\N4374-over.gif");
+		HY_JPanel GImage = new HY_JPanel("pics/N4374-over.gif");
         GImage.setLayout(null);
         GImage.setName(N4374_PANEL);
         
@@ -961,7 +990,7 @@ public class HY_UI {
     				//popup.show(e.getComponent(), e.getX(), e.getY());
     				//System.out.println(bntN4375[m].getName());
     				
-    				init_SetKeyCode(bntN4374[m].getName());   				
+    				UI_SetKeyCode(bntN4374[m].getName());   				
     			}
     			@Override
     			public void mouseReleased(MouseEvent e) {
@@ -1022,9 +1051,11 @@ public class HY_UI {
 	private JPanel init_N4375() {//64-Key
 		int i, j;
 
-		load_CFG_File("pics/NCR_64.dat");
+		if(load_CFG_File("pics/NCR_64.dat") != 0){
+			JOptionPane.showMessageDialog(jframe, "Can't open configuration file");
+		}
 		
-		HY_JPanel GImage = new HY_JPanel("pics\\N4375-down.gif");
+		HY_JPanel GImage = new HY_JPanel("pics/N4375-down.gif");
         GImage.setLayout(null);
         GImage.setName(N4375_PANEL);  
         
@@ -1051,7 +1082,7 @@ public class HY_UI {
     				//popup.show(e.getComponent(), e.getX(), e.getY());
     				//System.out.println(bntN4375[m].getName());
     				
-    				init_SetKeyCode(bntN4375[m].getName());
+    				UI_SetKeyCode(bntN4375[m].getName());
     			}
     			@Override
     			public void mouseReleased(MouseEvent e) {
@@ -1120,7 +1151,7 @@ public class HY_UI {
             			public void mouseEntered(MouseEvent e) {            				
             				
             				//bntN4375[32 + jj*9 + ii].setOpaque(false);
-            				bntN4375[32 + jj*9 + ii].setIcon(new ImageIcon("pics//N4375_Up_7.jpg")); 
+            				bntN4375[32 + jj*9 + ii].setIcon(new ImageIcon("pics/N4375_Up_7.jpg")); 
             				
             				bntN4375[32 + jj*9 + ii].setText("absd");
             			}
@@ -1144,7 +1175,7 @@ public class HY_UI {
         
         /*
         bntN4375[32 + 3].setBounds(143 + 3*55 + 15 + 10, (52), 25, 26);
-        //bntN4375[35].setIcon(new ImageIcon("pics\\N4375_Up_7.jpg"));
+        //bntN4375[35].setIcon(new ImageIcon("pics/N4375_Up_7.jpg"));
         bntN4375[35].addMouseListener(new MouseListener(){
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -1167,7 +1198,7 @@ public class HY_UI {
 				//bntN4375[35].setBackground(CLR_KEY_MOUSE_IN);
 				//bntN4375[35].setForeground(CLR_KEY_MOUSE_IN); 
 				System.out.println("I AM");
-				bntN4375[35].setIcon(new ImageIcon("pics\\N4375_Down_7.jpg"));
+				bntN4375[35].setIcon(new ImageIcon("pics/N4375_Down_7.jpg"));
 			}
 
 			@Override

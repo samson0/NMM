@@ -193,13 +193,13 @@ public class HY_USB {
 		
         try{
             // Release the interface            
-			int result = LibUsb.releaseInterface(this.myDeviceHandle, 1);
+			int result = LibUsb.releaseInterface(this.myDeviceHandle, 0);
             if (result != LibUsb.SUCCESS)
             {
 			    System.out.println("Unable to release interface");
             }
 
-            LibUsb.attachKernelDriver(this.myDeviceHandle, 1);
+            LibUsb.attachKernelDriver(this.myDeviceHandle, 0);
             if (result != LibUsb.SUCCESS){
             	System.out.println("Unable to re-attach kernel driver");
             }
