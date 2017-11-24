@@ -21,16 +21,20 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 import javax.naming.event.NamingEvent;
@@ -44,6 +48,7 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -153,14 +158,89 @@ public class HY_UI {
         
         miOpenFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	JFileChooser fc = new JFileChooser(new File(System.getProperty("user.dir")));
+            	List list = new ArrayList();
+            	list.add("dat");
+            	fc.setFileFilter(new javax.swing.filechooser.FileFilter() {
+                    @Override
+                    public boolean accept(File f) {
+                       if(f.isDirectory())return true;
+                       String name=f.getName();
+                       int p=name.lastIndexOf('.');
+                       if(p==-1)return false;
+                       String suffix=name.substring(p+1).toLowerCase();
+                       return list.contains(suffix);
+                    }
+                    @Override
+                    public String getDescription() {
+                        return "DAT files";
+                    }
+                
+            	});
+            	
+            	int returnVal = fc.showOpenDialog(jframe);
 
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    int ret = load_CFG_File(fc.getSelectedFile().getAbsolutePath());
+                    if(ret == -2)
+                    	JOptionPane.showMessageDialog(jframe, "Wrong configuration file");
+                    else if(ret == -3)
+                    	JOptionPane.showMessageDialog(jframe, "Configuration file not match the selected keyboard");
+                }
             }
         });
         jmFile.add(miOpenFile);
         
         miSaveFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	JFileChooser fc = new JFileChooser(new File(System.getProperty("user.dir")));
+            	List list = new ArrayList();
+            	list.add("dat");
+            	fc.setFileFilter(new javax.swing.filechooser.FileFilter() {
+                    @Override
+                    public boolean accept(File f) {
+                       if(f.isDirectory())return true;
+                       String name=f.getName();
+                       int p=name.lastIndexOf('.');
+                       if(p==-1)return false;
+                       String suffix=name.substring(p+1).toLowerCase();
+                       return list.contains(suffix);
+                    }
+                    @Override
+                    public String getDescription() {
+                        return "DAT files";
+                    }
+                
+            	});
+            	
+            	int returnVal = fc.showSaveDialog(jframe);
+            	
+            	if (returnVal == JFileChooser.APPROVE_OPTION) {
+            		try{
+            			File f = new File(fc.getSelectedFile().getAbsolutePath());  
+            			if(!f.exists()){            				
+            				f.createNewFile();           				
+            			}
+            			
+            			//BufferedInputStream in = new BufferedInputStream(new FileInputStream(f));
+            			BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(f));
+            			
+            			byte[] kb_model = new byte[1];
+            			if(selected_kb == KB_N4375)
+            				kb_model[0] = 2;
+            			else if(selected_kb == KB_N4374)
+            				kb_model[0] = 1;
+            			out.write(kb_model, 0, 1);
+            			out.write(keymap_buf, 0, keymap_buf.length);
+                        
+            			out.close();                        
 
+            		}catch(FileNotFoundException fx){
+            			fx.printStackTrace();
+            		}catch(IOException ex){
+            			ex.printStackTrace();
+            		}
+                }
             }
         });
         jmFile.add(miSaveFile);
@@ -327,6 +407,9 @@ public class HY_UI {
 				iRet = -1;
 				throw new FileNotFoundException(cfgFilePath);  
 			}
+			
+			if(f.length() > keymap_buf.length + 1)
+				return -2;
 			
 			BufferedInputStream in = new BufferedInputStream(new FileInputStream(f));  
 
