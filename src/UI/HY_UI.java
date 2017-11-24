@@ -10,6 +10,8 @@ import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
@@ -27,6 +29,7 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -40,6 +43,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -64,6 +68,8 @@ import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.text.Document;
+import javax.xml.bind.DatatypeConverter;
 
 import Command.HY_Command;
 import USB.HY_USB;
@@ -173,13 +179,22 @@ public class HY_UI {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
             	HY_Command hyCommand = new HY_Command(kb_hid_size);
 
-				if(hyCommand.Write_CfgData_To_Flash()){
+				if(hyCommand.N4375_Write_CfgData_To_Flash()){
 					JOptionPane.showMessageDialog(jframe, "Write all to flash successfully.");					  
 				}else
 					JOptionPane.showMessageDialog(jframe, "Fail to connect to USB keyboard.");
             }
         });
         jmKeyboard.add(miWriteAllToFlash);
+        jmKeyboard.addSeparator();
+        JMenuItem miRS232Control = new JMenuItem("RS232 Control");
+        miRS232Control.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	N4375_RS232_Control();
+            }
+        });
+        jmKeyboard.add(miRS232Control);
+        jmKeyboard.addSeparator();
         JMenuItem miKeyboardConfiguration = new JMenuItem("Keyboard Configuration");        
         miKeyboardConfiguration.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -187,14 +202,7 @@ public class HY_UI {
             		N4375_Keyboard_Configuration();
             }
         });
-        jmKeyboard.add(miKeyboardConfiguration);
-        JMenuItem miRS232Control = new JMenuItem("RS232 Control");
-        miRS232Control.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-            	
-            }
-        });
-        jmKeyboard.add(miRS232Control);
+        jmKeyboard.add(miKeyboardConfiguration);        
         /*JMenuItem miSentinelTable = new JMenuItem("Sentinel Table");
         miSentinelTable.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -219,7 +227,42 @@ public class HY_UI {
             	hyUSB.usb_Close();
             }
         });
-        jmDiagnostic.add(miGetVersion);   
+        jmDiagnostic.add(miGetVersion); 
+        JMenuItem miGetStatus = new JMenuItem("Get Status");        
+        miGetStatus.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {            	
+            	HY_Command hyCommand = new HY_Command(kb_hid_size);
+				byte[] keylock = new byte[1];
+				byte[] cashdrawer = new byte[1];
+				if(hyCommand.N4375_Get_Status(keylock, cashdrawer)){
+					String str1 = null;
+					if(keylock[0] == (byte)0x1B)
+						str1 = "Ex";
+					else if(keylock[0] == (byte)0x0F)
+						str1 = "L";
+					else if(keylock[0] == (byte)0x15)
+						str1 = "R";
+					else if(keylock[0] == (byte)0x16)
+						str1 = "S";
+					else
+						str1 = "Unknown";
+					
+					String str2 = null;
+					if(cashdrawer[0] == (byte)0x12)
+						str2 = "Open";
+					else if(cashdrawer[0] == (byte)0x06)
+						str2 = "Closed";
+					else
+						str2 = "Unknown";
+					
+					JOptionPane.showMessageDialog(jframe, "<html>Keylock Position:" + str1
+														+ "<br>Cash drawer is " + str2 + "</html>");
+				}else{
+					JOptionPane.showMessageDialog(jframe, "Fail to connect to the USB keyboard.");					  
+				}
+            }
+        });
+        jmDiagnostic.add(miGetStatus);
                
         
         JMenuBar  jMenuBar = new  JMenuBar();        
@@ -301,6 +344,9 @@ public class HY_UI {
             }else{
             	iRet = -2;
             }
+            
+            in.close();
+            
 
 		}catch(FileNotFoundException fx){
 			fx.printStackTrace();
@@ -1995,7 +2041,7 @@ public class HY_UI {
         }
 	}
 	
-	private String N4375_GetKBCfgFromUI(){
+	private String N4375_Get_KB_Cfg_FromUI(){
 		byte tmp_dat = 0;
 		int tmp_int = 0;
 		boolean bCheck = true;
@@ -2205,7 +2251,7 @@ public class HY_UI {
             	if(jTabbedPane.getSelectedIndex() == N4375_KbCfg_LastTabIndex)
             		return;
             	
-            	String str = N4375_GetKBCfgFromUI();
+            	String str = N4375_Get_KB_Cfg_FromUI();
 				if(!str.equals("")){
 					JOptionPane.showMessageDialog(jfKbCfg, str);
 			
@@ -2269,7 +2315,7 @@ public class HY_UI {
 			  {			  
 				  HY_Command hyCommand = new HY_Command(kb_hid_size);
 				  byte[] rev_data = new byte[kb_hid_size];
-				  if(hyCommand.Get_Keyboard_Configuration(rev_data)){
+				  if(hyCommand.N4375_Get_Keyboard_Configuration(rev_data)){
 					  System.arraycopy(rev_data, 1, keymap_buf, 0, 0x17);
 
 					  N4375_Update_KB_CFG_UI();
@@ -2287,7 +2333,7 @@ public class HY_UI {
 		{
 			  public void actionPerformed(ActionEvent e)
 			  {
-				  String str = N4375_GetKBCfgFromUI();
+				  String str = N4375_Get_KB_Cfg_FromUI();
 				  if(!str.equals("")){
 					  JOptionPane.showMessageDialog(jfKbCfg, str);
 				
@@ -2296,7 +2342,7 @@ public class HY_UI {
 				  
 				  HY_Command hyCommand = new HY_Command(kb_hid_size);
 
-				  if(hyCommand.Set_Keyboard_Configuration(Arrays.copyOf(keymap_buf, 0x17))){
+				  if(hyCommand.N4375_Set_Keyboard_Configuration(Arrays.copyOf(keymap_buf, 0x17))){
 					  JOptionPane.showMessageDialog(jfKbCfg, "Set keyboard configurations successfully.");					  
 				  }else
 					  JOptionPane.showMessageDialog(jfKbCfg, "Fail to connect to the USB keyboard.");
@@ -2307,6 +2353,505 @@ public class HY_UI {
 		
 		N4375_Update_KB_CFG_UI();
         
+        jframe.setEnabled(false);
+	}
+	
+	
+	private void N4375_Update_RS232_Control_UI(){
+		
+		//RS232 Info
+		if((keymap_buf[0x01] & 0x40) == 0x40){
+			jbCashDrawerCash.setSelected(true);
+		}else
+			jbCashDrawerScanner.setSelected(true);
+		
+		if((keymap_buf[0x00] & 0x02) == 0x02){
+			jbRS232DataReportEnable.setSelected(true);
+		}else
+			jbRS232DataReportDisable.setSelected(true);
+		
+		if((keymap_buf[0x01] & 0x04) == 0x04){
+			jbRS232RawASCIITrue.setSelected(true);
+		}else
+			jbRS232RawASCIIFalse.setSelected(true);
+		
+		jcbUARTIN.setSelectedIndex(keymap_buf[0x09] & 0x03);
+		jcbUARTOut.setSelectedIndex((keymap_buf[0x09] & 0x0C) >> 2);
+		jcbUARTParity.setSelectedIndex((keymap_buf[0x09] & 0x30) >> 4);
+		jcbUARTBaudrate.setSelectedIndex((keymap_buf[0x09] & 0xC0) >> 6);
+		jcbUARTDataLen.setSelectedIndex((keymap_buf[0x0A] & 0x80) >> 7);
+	}
+	
+	private String N4375_Get_RS232_Control_FromUI(){
+		
+		
+		return "";
+	}
+	
+	private JRadioButton jbCashDrawerScanner, jbCashDrawerCash,
+						 jbRS232DataReportDisable, jbRS232DataReportEnable,
+						 jbRS232RawASCIIFalse, jbRS232RawASCIITrue
+						 ;
+	private JComboBox<String> jcbUARTIN, jcbUARTOut, jcbUARTParity, 
+							  jcbUARTBaudrate, jcbUARTDataLen;
+	private void N4375_RS232_Control(){
+		JFrame jfRS232Control = new JFrame();
+		
+		jfRS232Control.setSize(550, 550);
+		jfRS232Control.setLayout(null);
+		jfRS232Control.setResizable(false);
+		jfRS232Control.setAlwaysOnTop(true);              
+  
+        jfRS232Control.setVisible(true);
+        jfRS232Control.setLocationRelativeTo(null);
+
+        jfRS232Control.addWindowListener(new WindowListener() {
+
+			@Override
+			public void windowActivated(WindowEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void windowClosed(WindowEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void windowClosing(WindowEvent arg0) {
+				// TODO Auto-generated method stub
+				jframe.setEnabled(true);
+			}
+
+			@Override
+			public void windowDeactivated(WindowEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void windowDeiconified(WindowEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void windowIconified(WindowEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void windowOpened(WindowEvent arg0) {
+				// TODO Auto-generated method stub
+				//JList jList
+			}
+		});
+        
+        //-------------------------------------------------
+        JPanel jp = new JPanel();
+		Border line = BorderFactory.createLineBorder(Color.black);
+		jp.setBorder(BorderFactory.createTitledBorder(line, "RS232 Information"));
+		jp.setLayout(null);
+		jp.setBounds(10, 10, 530, 230);
+		
+		int height = 20;
+		
+		JLabel[] labRS232Info = new JLabel[8];
+		for(int i = 0; i < labRS232Info.length; i++){
+			labRS232Info[i] = new JLabel();
+			labRS232Info[i].setBounds(15, 15 + i*height, 200, height);
+			jp.add(labRS232Info[i]);
+		}
+		labRS232Info[0].setText("Cash Drawer Configured");
+		labRS232Info[1].setText("RS232 Data report");
+		labRS232Info[2].setText("RS232 in RAW ASCII");
+		labRS232Info[3].setText("UART Control-IN setting");
+		labRS232Info[4].setText("UART Control-OUT setting");
+		labRS232Info[5].setText("UART Parity setting");
+		labRS232Info[6].setText("UART Baud-rate setting");
+		labRS232Info[7].setText("UART data length");
+		
+		//++++++++++++++++
+		jbCashDrawerScanner = new JRadioButton("Scanner");
+		jbCashDrawerScanner.setBounds(220, 15, 100, height);		
+        jp.add(jbCashDrawerScanner);
+        jbCashDrawerCash = new JRadioButton("Cash Drawer");
+        jbCashDrawerCash.setBounds(350, 15, 130, height);
+	    jp.add(jbCashDrawerCash);
+	    ButtonGroup jbgCashDrawer = new ButtonGroup();	    
+	    jbgCashDrawer.add(jbCashDrawerScanner);
+	    jbgCashDrawer.add(jbCashDrawerCash);
+	    ActionListener alCashDrawer = new ActionListener() {
+            public void actionPerformed(ActionEvent ae) {
+                JRadioButton radio = (JRadioButton) ae.getSource();
+                if (radio == jbCashDrawerScanner) {
+                	keymap_buf[0x01] &= 0xBF;                	
+                } else if (radio == jbCashDrawerCash) {
+                	keymap_buf[0x01] |= 0x40;
+                }
+            }
+        };
+        jbCashDrawerScanner.addActionListener(alCashDrawer);
+        jbCashDrawerCash.addActionListener(alCashDrawer);
+        
+      //++++++++++++++++
+        jbRS232DataReportDisable = new JRadioButton("Disable");
+        jbRS232DataReportDisable.setBounds(220, 15 + height, 100, height);		
+        jp.add(jbRS232DataReportDisable);
+        jbRS232DataReportEnable = new JRadioButton("Enable");
+        jbRS232DataReportEnable.setBounds(350, 15 + height, 100, height);
+	    jp.add(jbRS232DataReportEnable);
+	    ButtonGroup jbgRS232DataReport = new ButtonGroup();	    
+	    jbgRS232DataReport.add(jbRS232DataReportDisable);
+	    jbgRS232DataReport.add(jbRS232DataReportEnable);
+	    ActionListener alRS232DataReport = new ActionListener() {
+            public void actionPerformed(ActionEvent ae) {
+                JRadioButton radio = (JRadioButton) ae.getSource();
+                if (radio == jbRS232DataReportDisable) {
+                	keymap_buf[0x00] &= 0xFD;                	
+                } else if (radio == jbRS232DataReportEnable) {
+                	keymap_buf[0x00] |= 0x02;
+                }
+            }
+        };
+        jbRS232DataReportDisable.addActionListener(alRS232DataReport);
+        jbRS232DataReportEnable.addActionListener(alRS232DataReport);
+        
+      //++++++++++++++++
+        jbRS232RawASCIIFalse = new JRadioButton("False");
+        jbRS232RawASCIIFalse.setBounds(220, 15 + 2*height, 100, height);		
+        jp.add(jbRS232RawASCIIFalse);
+        jbRS232RawASCIITrue = new JRadioButton("True");
+        jbRS232RawASCIITrue.setBounds(350, 15 + 2*height, 100, height);
+	    jp.add(jbRS232RawASCIITrue);
+	    ButtonGroup jbgRS232RawASCII = new ButtonGroup();	    
+	    jbgRS232RawASCII.add(jbRS232RawASCIIFalse);
+	    jbgRS232RawASCII.add(jbRS232RawASCIITrue);
+	    ActionListener alRS232RawASCII = new ActionListener() {
+            public void actionPerformed(ActionEvent ae) {
+                JRadioButton radio = (JRadioButton) ae.getSource();
+                if (radio == jbRS232RawASCIIFalse) {
+                	keymap_buf[0x01] &= 0xFB;                	
+                } else if (radio == jbRS232RawASCIITrue) {
+                	keymap_buf[0x01] |= 0x04;
+                }
+            }
+        };
+        jbRS232RawASCIIFalse.addActionListener(alRS232RawASCII);
+        jbRS232RawASCIITrue.addActionListener(alRS232RawASCII);
+        
+        //++++++++++++++++++
+        jcbUARTIN = new JComboBox<String>();
+        jcbUARTIN.setBounds(220, 15 + 3*height, 120, height);
+        //jcbUARTIN.setBorder(BorderFactory.createTitledBorder("¦ê¤f"));
+        jcbUARTIN.addItem("RTS");
+        jcbUARTIN.addItem("CTS");
+        jcbUARTIN.addItem("Reserved");
+        jcbUARTIN.addItem("Ignore");
+        jcbUARTIN.setMaximumRowCount(4);
+        jcbUARTIN.addItemListener(new ItemListener(){
+        	public void itemStateChanged(ItemEvent event)
+        	{
+        		switch (event.getStateChange())
+        		{
+        			case ItemEvent.SELECTED: 
+        				keymap_buf[0x09] &= 0xFC;
+        				keymap_buf[0x09] |= jcbUARTIN.getSelectedIndex();
+        				break;
+        			case ItemEvent.DESELECTED:
+        				//System.out.println("B"+event.getItem());
+        				break;
+        			}
+        		}
+        });
+        jp.add(jcbUARTIN);
+        
+      //++++++++++++++++++
+        jcbUARTOut = new JComboBox<String>();
+        jcbUARTOut.setBounds(220, 15 + 4*height, 120, height);
+        jcbUARTOut.addItem("CTS");
+        jcbUARTOut.addItem("RTS");
+        jcbUARTOut.addItem("Hold Low");
+        jcbUARTOut.addItem("Ignore");
+        jcbUARTOut.setMaximumRowCount(4);
+        jcbUARTOut.addItemListener(new ItemListener(){
+        	public void itemStateChanged(ItemEvent event)
+        	{
+        		switch (event.getStateChange())
+        		{
+        			case ItemEvent.SELECTED: 
+        				keymap_buf[0x09] &= 0xF3;
+        				keymap_buf[0x09] |= jcbUARTOut.getSelectedIndex() << 2;
+        				break;
+        			case ItemEvent.DESELECTED:
+        				//System.out.println("B"+event.getItem());
+        				break;
+        			}
+        		}
+        });
+        jp.add(jcbUARTOut);
+        
+      //++++++++++++++++++
+        jcbUARTParity = new JComboBox<String>();
+        jcbUARTParity.setBounds(220, 15 + 5*height, 120, height);
+        jcbUARTParity.addItem("Strip");
+        jcbUARTParity.addItem("None");
+        jcbUARTParity.addItem("Even");
+        jcbUARTParity.addItem("Odd");
+        jcbUARTParity.setMaximumRowCount(4);
+        jcbUARTParity.addItemListener(new ItemListener(){
+        	public void itemStateChanged(ItemEvent event)
+        	{
+        		switch (event.getStateChange())
+        		{
+        			case ItemEvent.SELECTED: 
+        				keymap_buf[0x09] &= 0xCF;
+        				keymap_buf[0x09] |= jcbUARTParity.getSelectedIndex() << 4;
+        				break;
+        			case ItemEvent.DESELECTED:
+        				//System.out.println("B"+event.getItem());
+        				break;
+        			}
+        		}
+        });
+        jp.add(jcbUARTParity);
+        
+      //++++++++++++++++++
+        jcbUARTBaudrate = new JComboBox<String>();
+        jcbUARTBaudrate.setBounds(220, 15 + 6*height, 120, height);
+        jcbUARTBaudrate.addItem("115200 BPS");
+        jcbUARTBaudrate.addItem("1200 BPS");
+        jcbUARTBaudrate.addItem("9600 BPS");
+        jcbUARTBaudrate.addItem("19200 BPS");
+        jcbUARTBaudrate.setMaximumRowCount(4);
+        jcbUARTBaudrate.addItemListener(new ItemListener(){
+        	public void itemStateChanged(ItemEvent event)
+        	{
+        		switch (event.getStateChange())
+        		{
+        			case ItemEvent.SELECTED: 
+        				keymap_buf[0x09] &= 0x3F;
+        				keymap_buf[0x09] |= jcbUARTBaudrate.getSelectedIndex() << 6;
+        				break;
+        			case ItemEvent.DESELECTED:
+        				//System.out.println("B"+event.getItem());
+        				break;
+        			}
+        		}
+        });
+        jp.add(jcbUARTBaudrate);
+        
+      //++++++++++++++++++
+        jcbUARTDataLen = new JComboBox<String>();
+        jcbUARTDataLen.setBounds(220, 15 + 7*height, 120, height);
+        jcbUARTDataLen.addItem("10 bits");
+        jcbUARTDataLen.addItem("11 bits");
+        jcbUARTDataLen.setMaximumRowCount(2);
+        jcbUARTDataLen.addItemListener(new ItemListener(){
+        	public void itemStateChanged(ItemEvent event)
+        	{
+        		switch (event.getStateChange())
+        		{
+        			case ItemEvent.SELECTED: 
+        				keymap_buf[0x0A] &= 0x7F;
+        				keymap_buf[0x0A] |= jcbUARTDataLen.getSelectedIndex() << 7;
+        				break;
+        			case ItemEvent.DESELECTED:
+        				//System.out.println("B"+event.getItem());
+        				break;
+        			}
+        		}
+        });
+        jp.add(jcbUARTDataLen);   
+        
+        
+        JButton bntGet = new JButton("Get");
+		JButton bntSet = new JButton("Set");
+		
+		bntGet.setBounds(200, 35 + 8*height, 60, height);
+		bntGet.addActionListener(new ActionListener()
+		{
+			  public void actionPerformed(ActionEvent e)
+			  {		
+				  HY_Command hyCommand = new HY_Command(kb_hid_size);
+				  byte[] rev_data = new byte[kb_hid_size];
+				  if(hyCommand.N4375_Get_Keyboard_Configuration(rev_data)){
+					  System.arraycopy(rev_data, 1, keymap_buf, 0, 0x17);
+
+					  N4375_Update_RS232_Control_UI();
+					  
+					  bntSet.setEnabled(true);
+				  }else{
+					  JOptionPane.showMessageDialog(jp, "Fail to connect to the USB keyboard.");
+				  }
+			  }
+		});
+		jp.add(bntGet);		
+		
+		bntSet.setBounds(300, 35 + 8*height, 60, height);
+		bntSet.addActionListener(new ActionListener()
+		{
+			  public void actionPerformed(ActionEvent e)
+			  {
+				  /*String str = N4375_Get_KB_Cfg_FromUI();
+				  if(!str.equals("")){
+					  JOptionPane.showMessageDialog(jp, str);
+				
+					  return;
+				  }*/
+				  
+				  HY_Command hyCommand = new HY_Command(kb_hid_size);
+
+				  if(hyCommand.N4375_Set_Keyboard_Configuration(Arrays.copyOf(keymap_buf, 0x17))){
+					  JOptionPane.showMessageDialog(jp, "Set keyboard configurations successfully.");					  
+				  }else
+					  JOptionPane.showMessageDialog(jp, "Fail to connect to the USB keyboard.");	  
+			  }
+		});
+		bntSet.setEnabled(false);
+		jp.add(bntSet);
+        
+		
+		jfRS232Control.add(jp);
+		
+		
+		//-------------------------------------------------
+        JPanel jp1 = new JPanel();
+		Border line1 = BorderFactory.createLineBorder(Color.black);
+		jp1.setBorder(BorderFactory.createTitledBorder(line, "Serial data output"));
+		jp1.setLayout(null);
+		jp1.setBounds(10, 250, 530, 100);
+		
+		//++++++++++++++++++
+		JLabel labDataType = new JLabel("Data Type");
+		labDataType.setBounds(10, 20, 100, height);
+		jp1.add(labDataType);
+		
+		JLabel labT = new JLabel("ASCII");
+		labT.setBounds(10, 25 + height, 50, height);
+		jp1.add(labT);		
+		
+		JTextField tfUARTSendData =  new JTextField();
+		tfUARTSendData.setBounds(60, 25 + height, 250, height);
+		//LimitedDocument ldUARTDataASCII = new LimitedDocument();
+		//ldUARTDataASCII.setAllowChar("");
+		Document defaultDocument = tfUARTSendData.getDocument();		
+		LimitedDocument ldUARTDataHEX = new LimitedDocument();
+		ldUARTDataHEX.setAllowChar("0123456789abcdefABCDEF");		
+		jp1.add(tfUARTSendData);
+		
+		JRadioButton jbUARTDataTypeASCII, jbUARTDataTypeHEX;
+		jbUARTDataTypeASCII = new JRadioButton("ASCII");
+		jbUARTDataTypeASCII.setBounds(110, 20, 60, height);	
+		jbUARTDataTypeASCII.setSelected(true);
+		jp1.add(jbUARTDataTypeASCII);
+		jbUARTDataTypeHEX = new JRadioButton("HEX");
+		jbUARTDataTypeHEX.setBounds(170, 20, 60, height);
+	    jp1.add(jbUARTDataTypeHEX);
+	    ButtonGroup jbgUARTDataType = new ButtonGroup();	    
+	    jbgUARTDataType.add(jbUARTDataTypeASCII);
+	    jbgUARTDataType.add(jbUARTDataTypeHEX);
+	    ActionListener alUARTDataType = new ActionListener() {
+            public void actionPerformed(ActionEvent ae) {
+                JRadioButton radio = (JRadioButton) ae.getSource();
+                
+                tfUARTSendData.setText("");
+                
+                if (radio == jbUARTDataTypeASCII) {
+                	labT.setText("ASCII");
+                	tfUARTSendData.setDocument(defaultDocument);
+                } else if (radio == jbUARTDataTypeHEX) {
+                	labT.setText("HEX");
+                	tfUARTSendData.setDocument(ldUARTDataHEX);
+                }
+                
+                tfUARTSendData.requestFocus();
+            }
+        };
+        jbUARTDataTypeASCII.addActionListener(alUARTDataType);
+        jbUARTDataTypeHEX.addActionListener(alUARTDataType);
+		
+        //+++++++++++++++++++
+		JLabel labReturnCode = new JLabel("Return result code");
+		labReturnCode.setBounds(20, 30 + 2*height, 150, height);
+		jp1.add(labReturnCode);
+
+		JTextField tfReturnCode =  new JTextField();
+		tfReturnCode.setBounds(160, 30 + 2*height, 80, height);
+		tfReturnCode.setEditable(false);
+		jp1.add(tfReturnCode);
+		
+        JButton bntSendUART = new JButton("RS232 data output");
+        bntSendUART.setBounds(260, 30 + 2*height, 170, height);
+		bntSendUART.addActionListener(new ActionListener()
+		{
+			  public void actionPerformed(ActionEvent e)
+			  {
+				  String str = tfUARTSendData.getText().trim();
+				  
+				  if(str.equals(""))
+					  return;
+				  
+				  byte[] send_buf = null;
+				  if(jbUARTDataTypeHEX.isSelected()){
+					  if((str.length()%2) != 0){
+						  str = new StringBuilder(str).insert(str.length() - 1, "0").toString();
+						  System.out.println(str);
+					  }					  
+					  send_buf = DatatypeConverter.parseHexBinary(str);					  
+				  }else{
+					  send_buf = str.getBytes(StandardCharsets.US_ASCII);
+				  }
+				  for(int i = 0; i < send_buf.length; i++){
+					  System.out.println(String.format("%02X", send_buf[i]));
+				  }
+				  
+				  HY_Command hyCommand = new HY_Command(kb_hid_size);
+
+				  int ret = hyCommand.N4375_Send_UART_Data(send_buf);
+				  if(ret == 2){
+					  JOptionPane.showMessageDialog(jp, "Fail to connect to the USB keyboard.");
+				  }else
+					  tfReturnCode.setText(String.format("0x%02X", ret));  	  
+			  }
+		});
+		jp1.add(bntSendUART);
+        
+		
+		jfRS232Control.add(jp1);
+		
+		
+		//-------------------------------------------------
+        JPanel jp2 = new JPanel();
+		Border line2 = BorderFactory.createLineBorder(Color.black);
+		jp2.setBorder(BorderFactory.createTitledBorder(line, "Cash drawer control"));
+		jp2.setLayout(null);
+		jp2.setBounds(10, 380, 530, 70);
+		
+		JButton bntCashDrawerCtl = new JButton("Fire cash drawer");
+		bntCashDrawerCtl.setBounds(15, 25, 500, 30);
+		bntCashDrawerCtl.addActionListener(new ActionListener()
+		{
+			  public void actionPerformed(ActionEvent e)
+			  {			  
+				  HY_Command hyCommand = new HY_Command(kb_hid_size);
+
+				  if(!hyCommand.N4375_Cash_Drawer_Ctl((byte)0x01)){
+					  JOptionPane.showMessageDialog(jp, "Fail to connect to the USB keyboard.");
+				  }
+			  }
+		});
+		jp2.add(bntCashDrawerCtl);
+		
+		
+		jfRS232Control.add(jp2);
+		
+		
+		N4375_Update_RS232_Control_UI();
+		
         jframe.setEnabled(false);
 	}
 	
