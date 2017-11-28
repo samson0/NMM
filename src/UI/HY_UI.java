@@ -145,6 +145,7 @@ public class HY_UI {
 		Locale.setDefault(Locale.ENGLISH); 
 		
         jframe = new JFrame("NCR Ver1.00");
+        jframe.setLayout(null);
         jframe.setSize(850, 500);
         jframe.setResizable(false);
 		
@@ -261,6 +262,49 @@ public class HY_UI {
         jmFile.add(miExit);           
         
         JMenu jmKeyboard = new JMenu("Keyboard");
+        JMenuItem miUpdateWholeKeyboard = new JMenuItem("Update Whole Keyboard");        
+        miUpdateWholeKeyboard.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	
+            	HY_Command hyCommand = new HY_Command(kb_hid_size);
+
+				if(hyCommand.N4375_Update_Whole_Keyboard(keymap_buf)){
+					JOptionPane.showMessageDialog(jframe, "Update key mappings successfully.");					  
+				}else
+					JOptionPane.showMessageDialog(jframe, "Fail to connect to USB keyboard.");
+				
+				hyCommand.HY_Command_Close();
+            }
+        });
+        jmKeyboard.add(miUpdateWholeKeyboard);
+        JMenuItem miUpdateKeyMapping = new JMenuItem("Update Key Mappings");        
+        miUpdateKeyMapping.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	
+            	HY_Command hyCommand = new HY_Command(kb_hid_size);
+
+				if(hyCommand.N4375_Update_Key_Mappings(keymap_buf)){
+					JOptionPane.showMessageDialog(jframe, "Update key mappings successfully.");					  
+				}else
+					JOptionPane.showMessageDialog(jframe, "Fail to connect to USB keyboard.");
+				
+				hyCommand.HY_Command_Close();
+            }
+        });
+        jmKeyboard.add(miUpdateKeyMapping);
+        JMenuItem miRetrieveKeyboard = new JMenuItem("Retrieve Keyboard");        
+        miRetrieveKeyboard.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	
+            	HY_Command hyCommand = new HY_Command(kb_hid_size);
+
+				if(hyCommand.N4375_Retrieve_Keyboard(keymap_buf)){
+					JOptionPane.showMessageDialog(jframe, "Update key mappings successfully.");					  
+				}else
+					JOptionPane.showMessageDialog(jframe, "Fail to connect to USB keyboard.");
+            }
+        });
+        jmKeyboard.add(miRetrieveKeyboard);
         JMenuItem miWriteAllToFlash = new JMenuItem("Write all to flash");        
         miWriteAllToFlash.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -356,12 +400,12 @@ public class HY_UI {
         jMenuBar.add(jmFile);
         jMenuBar.add(jmKeyboard);
         jMenuBar.add(jmDiagnostic);
-        jframe.setJMenuBar(jMenuBar);          
+        jframe.setJMenuBar(jMenuBar);    
           
+        jTabbedPane.setBounds(0, 0, jframe.getWidth() - 100, jframe.getHeight() - 100);;
         jTabbedPane.add("64-Key", init_N4375());
         jTabbedPane.add("Compact Alpha", init_N4374());
         jTabbedPane.addChangeListener(new ChangeListener() {
-
 			@Override
 			public void stateChanged(ChangeEvent arg0) {
 				// TODO Auto-generated method stub
@@ -373,7 +417,8 @@ public class HY_UI {
 			}
         	
         });
-        jframe.add(jTabbedPane, BorderLayout.CENTER);
+        jTabbedPane.setBounds(0, 0, jframe.getWidth(), jframe.getHeight() - 50);
+        jframe.add(jTabbedPane);
         
 /*        
         final JPopupMenu popup = new JPopupMenu();
@@ -459,7 +504,8 @@ public class HY_UI {
 	
 	/*
 	 * key_index ==> position of RAM buffer
-	 * Return: two bytes(retByte[1] => Modifier key, retByte[0] => HID Usage) -->  key Pxx
+	 * Return: Memory address
+	 * 		   two bytes(retByte[1] => Modifier key, retByte[0] => HID Usage) -->  key Pxx
 	 * 		   one byte  -->  matrix key 
 	 */
 	private int[] N4375_Key_Pos_Mapping(int index){
@@ -569,8 +615,8 @@ public class HY_UI {
 		tableKeyCode.setShowVerticalLines(false);
 		tableKeyCode.setFont(new Font("Menu.font", Font.PLAIN, 18));
 		tableKeyCode.setRowHeight(20);
-		tableKeyCode.getColumnModel().getColumn(0).setPreferredWidth(330);
-		tableKeyCode.getColumnModel().getColumn(1).setPreferredWidth(50);
+		tableKeyCode.getColumnModel().getColumn(0).setPreferredWidth(320);
+		tableKeyCode.getColumnModel().getColumn(1).setPreferredWidth(60);
 		tableKeyCode.addMouseListener(new MouseAdapter(){ 
 			public void mouseClicked(MouseEvent e){ 
 				if(e.getClickCount() == 2){
@@ -672,7 +718,7 @@ public class HY_UI {
 		jfKeycode.add(bntOK);
 		
 		JButton bntCancel = new JButton("Cancel");
-		bntCancel.setBounds(220, 570, 80, 30);
+		bntCancel.setBounds(220, 570, 100, 30);
 		bntCancel.addActionListener(new ActionListener()
 		{
 			  public void actionPerformed(ActionEvent e)
@@ -1672,9 +1718,9 @@ public class HY_UI {
             public void actionPerformed(ActionEvent ae) {
                 JRadioButton radio = (JRadioButton) ae.getSource();             
                 if (radio == jbP19Deactivated) {                	
-                	keymap_buf[0x11] &= 0xBF;
+                	keymap_buf[0x12] &= 0xFE;
                 } else if (radio == jbP19Activated) {
-                	keymap_buf[0x11] |= 0x40;
+                	keymap_buf[0x12] |= 0x01;
                 }
             }
         };
@@ -1753,9 +1799,9 @@ public class HY_UI {
             public void actionPerformed(ActionEvent ae) {
                 JRadioButton radio = (JRadioButton) ae.getSource();             
                 if (radio == jbP28Deactivated) {                	
-                	keymap_buf[0x12] &= 0xFB;
+                	keymap_buf[0x12] &= 0xF7;
                 } else if (radio == jbP28Activated) {
-                	keymap_buf[0x12] |= 0x04;
+                	keymap_buf[0x12] |= 0x08;
                 }
             }
         };
@@ -1780,9 +1826,9 @@ public class HY_UI {
             public void actionPerformed(ActionEvent ae) {
                 JRadioButton radio = (JRadioButton) ae.getSource();             
                 if (radio == jbP30Deactivated) {                	
-                	keymap_buf[0x12] &= 0xFB;
+                	keymap_buf[0x12] &= 0xBF;
                 } else if (radio == jbP30Activated) {
-                	keymap_buf[0x12] |= 0x04;
+                	keymap_buf[0x12] |= 0x40;
                 }
             }
         };
@@ -1807,9 +1853,9 @@ public class HY_UI {
             public void actionPerformed(ActionEvent ae) {
                 JRadioButton radio = (JRadioButton) ae.getSource();             
                 if (radio == jbP9Deactivated) {                	
-                	keymap_buf[0x12] &= 0xFB;
+                	keymap_buf[0x13] &= 0xFE;
                 } else if (radio == jbP9Activated) {
-                	keymap_buf[0x12] |= 0x04;
+                	keymap_buf[0x13] |= 0x01;
                 }
             }
         };
@@ -1834,9 +1880,9 @@ public class HY_UI {
             public void actionPerformed(ActionEvent ae) {
                 JRadioButton radio = (JRadioButton) ae.getSource();             
                 if (radio == jbP26Deactivated) {                	
-                	keymap_buf[0x12] &= 0xFB;
+                	keymap_buf[0x13] &= 0xFD;
                 } else if (radio == jbP26Activated) {
-                	keymap_buf[0x12] |= 0x04;
+                	keymap_buf[0x13] |= 0x02;
                 }
             }
         };
@@ -1906,9 +1952,9 @@ public class HY_UI {
         alBlockPair[4] = new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
                 JRadioButton radio = (JRadioButton) ae.getSource();             
-                if (radio == jbBlockPairLeft[0]) {                	
+                if (radio == jbBlockPairLeft[4]) {                	
                 	keymap_buf[0x15] &= 0xFE;
-                } else if (radio == jbBlockPairRight[0]) {
+                } else if (radio == jbBlockPairRight[4]) {
                 	keymap_buf[0x15] |= 0x01;
                 }
             }
@@ -2154,7 +2200,7 @@ public class HY_UI {
         	
         	jbP19Deactivated.setEnabled(true);
         	jbP19Activated.setEnabled(true);
-        	if((keymap_buf[0x11] & 0x40) == 0x40)
+        	if((keymap_buf[0x12] & 0x01) == 0x01)
         		jbP19Activated.setSelected(true);
         	else
         		jbP19Deactivated.setSelected(true);
@@ -2604,6 +2650,8 @@ public class HY_UI {
 					  JOptionPane.showMessageDialog(jfKbCfg, "Set keyboard configurations successfully.");					  
 				  }else
 					  JOptionPane.showMessageDialog(jfKbCfg, "Fail to connect to the USB keyboard.");
+				  
+				  hyCommand.HY_Command_Close();
 			  }
 		});
 		bntSet.setEnabled(false);
@@ -2967,7 +3015,9 @@ public class HY_UI {
 				  if(hyCommand.N4375_Set_Keyboard_Configuration(Arrays.copyOf(keymap_buf, 0x17))){
 					  JOptionPane.showMessageDialog(jp, "Set keyboard configurations successfully.");					  
 				  }else
-					  JOptionPane.showMessageDialog(jp, "Fail to connect to the USB keyboard.");	  
+					  JOptionPane.showMessageDialog(jp, "Fail to connect to the USB keyboard.");
+				  
+				  hyCommand.HY_Command_Close();
 			  }
 		});
 		bntSet.setEnabled(false);
@@ -3220,7 +3270,7 @@ public class HY_UI {
         	bntN4375[i].setBorderPainted(false);
         	bntN4375[i].setFocusPainted(false);
         	bntN4375[i].setOpaque(true);
-    		bntN4375[i].setForeground(CLR_KEY_BG);
+    		//bntN4375[i].setForeground(CLR_KEY_BG);
     		bntN4375[i].setBackground(CLR_KEY_BG);
 //if(!( ((i >= 35) && (i <= 37)) || ((i >= 44) && (i <= 46)) || ((i >= 53) && (i <= 55)) || ((i >= 62) && (i <= 64)) )) {    		
 			
@@ -3243,14 +3293,18 @@ public class HY_UI {
 
     			@Override
     			public void mouseEntered(MouseEvent e) {
+    				byte hid_keycode = keymap_buf[N4375_Key_Pos_Mapping(m)[0]];
+    				bntN4375[m].setToolTipText(HID_To_String.HidCodeToString(hid_keycode)
+    										  + String.format(" {0x%02X}", hid_keycode));
+    				
     				bntN4375[m].setBackground(CLR_KEY_MOUSE_IN);
-    				bntN4375[m].setForeground(CLR_KEY_MOUSE_IN);   				
+    				//bntN4375[m].setForeground(CLR_KEY_MOUSE_IN);	
     			}
 
     			@Override
     			public void mouseExited(MouseEvent e) {
     				bntN4375[m].setBackground(CLR_KEY_BG);
-    				bntN4375[m].setForeground(CLR_KEY_BG);
+    				//bntN4375[m].setForeground(CLR_KEY_BG);
     			}
     		});
 //}    		
@@ -3324,7 +3378,7 @@ public class HY_UI {
         		     		
         	}
         }
-        
+
         /*
         bntN4375[32 + 3].setBounds(143 + 3*55 + 15 + 10, (52), 25, 26);
         //bntN4375[35].setIcon(new ImageIcon("pics/N4375_Up_7.jpg"));

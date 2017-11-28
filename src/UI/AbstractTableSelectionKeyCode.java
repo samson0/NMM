@@ -15,26 +15,31 @@ public class AbstractTableSelectionKeyCode extends AbstractTableModel {
 		data[0][1] = "0x00";
 		
 		for(i = 1; i <= 26; i++){
-			data[i][0] = String.format("%c %c", (i - 1) + 'a', (i - 1) + 'A');
+			//data[i][0] = String.format("%c %c", (i - 1) + 'a', (i - 1) + 'A');
+			data[i][0] = HID_To_String.HidCodeToString((byte)((i - 1) + 4));
 			data[i][1] = String.format("0x%02X", (i - 1) + 4);
+			
 		}
 		
 		//0x1B - 0xA4
 		for(i = 27; i <= 161; i++){			
+			data[i][0] = HID_To_String.HidCodeToString((byte)(i + 3));
 			data[i][1] = new String(String.format("0x%02X", i + 3));
 		}	
 		
 		//0xB0
-		for(i = 162; i <= 207; i++){			
+		for(i = 162; i <= 207; i++){		
+			data[i][0] = HID_To_String.HidCodeToString((byte)(i + 14));
 			data[i][1] = new String(String.format("0x%02X", i + 14));
 		}
 		
 		//E0
 		for(i = 208; i <= 215; i++){			
-			data[i][1] = new String(String.format("0x%02X", i + 15));
+			data[i][0] = HID_To_String.HidCodeToString((byte)(i + 16));
+			data[i][1] = new String(String.format("0x%02X", i + 16));
 		}
 	
-		
+		/*
 		// 0x1E - 0x27
 		data[27][0] = "1 !";
 		data[28][0] = "2 @";
@@ -246,7 +251,7 @@ public class AbstractTableSelectionKeyCode extends AbstractTableModel {
 		data[212][0] = "Right control key";
 		data[213][0] = "Right shift key";
 		data[214][0] = "Right alt key";
-		data[215][0] = "Right GUI key";
+		data[215][0] = "Right GUI key";*/
 		
 	}
 	

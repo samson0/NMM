@@ -19,6 +19,11 @@ public class HY_Command {
 			this.bUsbCon = true;
 	}
 	
+	public void HY_Command_Close(){
+		if(hyUSB != null)
+			hyUSB.usb_Close();
+	}
+	
 	public boolean N4375_Get_Keyboard_Configuration(byte[] rev_data){
 		boolean bRet = false;
 		
@@ -59,9 +64,7 @@ public class HY_Command {
     		if(rev_data[0] == (byte)0x03){
     			bRet = true;
     		}   		
-    	}
-    	
-    	hyUSB.usb_Close();
+    	}   	
 		
 		return bRet;
 	}
@@ -180,6 +183,130 @@ public class HY_Command {
    			bRet = true;
     	}
     	
+    	hyUSB.usb_Close();
+		
+		return bRet;
+	}
+	
+	public boolean N4375_Update_Whole_Keyboard(byte[] send_data){
+		boolean bRet = true;
+				
+		bRet = N4375_Set_Keyboard_Configuration(Arrays.copyOfRange(send_data, 0x00, 0x17));
+		
+		if(bRet){
+			bRet = N4375_Update_Key_Mappings(send_data);
+		}	
+
+		return bRet;
+	}
+	
+	public boolean N4375_Update_Key_Mappings(byte[] key_buf){
+
+		if(!this.bUsbCon)
+			return false;
+
+		boolean bRet = true;
+		
+		byte[] send_buf = new byte[this.hid_size];
+		byte[] rev_data = new byte[this.hid_size];
+		Arrays.fill(send_buf, (byte)0);
+		
+		send_buf[0] = 0x05;// command
+		send_buf[2] = 0x10;
+		
+		// Set programmble key code
+		for(int i = 0; i < 4; i++){
+			send_buf[1] =(byte)(0x20 + i * 0x10);
+			System.arraycopy(key_buf, 0x20 + i * 0x10, send_buf, 3, 0x10);
+			
+			rev_data[0] = 0;
+			if(hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data)){    		
+	   			if(rev_data[0] != 0x05){
+	   				bRet = false;
+	   				
+	   				break;
+	   			}	   				
+	    	}
+		}
+		
+		if(bRet){		
+			// Set key mapping table
+			send_buf[0] = 0x09;// command
+			for(int i = 0; i < 8; i++){
+				send_buf[1] = (byte)(i * 0x10);
+				System.arraycopy(key_buf, (0x100 + i * 0x10), send_buf, 3, 0x10);
+			
+				rev_data[0] = 0;
+				if(hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data)){    		
+					if(rev_data[0] != 0x09){
+						bRet = false;
+	   				
+						break;
+					}	   				
+				}
+			}
+		}
+		
+		return bRet;
+	}
+	
+	public boolean N4375_Retrieve_Keyboard(byte[] key_buf){
+
+		if(!this.bUsbCon)
+			return false;
+
+		boolean bRet = true;
+		
+		byte[] send_buf = new byte[this.hid_size];
+		byte[] rev_data = new byte[this.hid_size];
+		
+		
+		//Get Keyboard configuration				
+		send_buf[0] = 0x02;// command		
+		if(hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data)){    		
+			if(rev_data[0] != 0x02){
+				bRet = false;
+			}else{
+				System.arraycopy(rev_data, 1, key_buf, 0, 0x18);
+			}
+		}	
+		
+		//Get programmable key code 
+		if(bRet){		
+			send_buf[0] = 0x04;// command
+			for(int i = 0; i < 0x100; i=i+0x10){
+				send_buf[1] = (byte)i;
+
+				if(hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data)){    		
+					if(rev_data[0] != 0x04){
+						bRet = false;
+	   				
+						break;
+					}else{
+						System.arraycopy(rev_data, 2, key_buf, i, 0x10);
+					}
+				}
+			}
+		}
+		
+		if(bRet){		
+			// Get key mapping table
+			send_buf[0] = 0x08;// command
+			for(int i = 0; i < 8; i++){
+				send_buf[1] = (byte)(i * 0x10);
+				
+				if(hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data)){    		
+					if(rev_data[0] != 0x08){
+						bRet = false;
+	   				
+						break;
+					}else{
+						System.arraycopy(rev_data, 2, key_buf, 0x100 + i*0x10, 0x10);
+					}
+				}
+			}
+		}
+
     	hyUSB.usb_Close();
 		
 		return bRet;

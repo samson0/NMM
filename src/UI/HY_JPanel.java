@@ -16,6 +16,6 @@ public class HY_JPanel extends JPanel{
 	protected void paintComponent(Graphics g) {
 		ImageIcon icon = new ImageIcon(this.strBgPicPath);
 		Image img = icon.getImage();
-		g.drawImage(img, 0, 0, icon.getIconWidth(), icon.getIconHeight(), icon.getImageObserver());
+		g.drawImage(img, 0, 0, icon.getIconWidth(), icon.getIconHeight(), icon.getImageObserver());		
 	}
 }
