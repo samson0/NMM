@@ -43,4 +43,29 @@ public class HID_To_String {
 
 		return table[(hid_code & 0xFF)];
 	}
+	
+	static String HidModifierToString(byte hid_modifier){
+		StringBuilder sb = new StringBuilder("");
+		
+		//System.out.println("hid_modifier = " + hid_modifier);
+		
+		if((hid_modifier & 0x80) > 0)
+			sb.append("[RGUI] ");
+		if((hid_modifier & 0x40) > 0)
+			sb.append("[RAlt] ");
+		if((hid_modifier & 0x20) > 0)
+			sb.append("[RShift] ");
+		if((hid_modifier & 0x10) > 0)
+			sb.append("[RCtrl] ");
+		if((hid_modifier & 0x08) > 0)
+			sb.append("[LGUI] ");
+		if((hid_modifier & 0x04) > 0)
+			sb.append("[LAlt] ");
+		if((hid_modifier & 0x02) > 0)
+			sb.append("[LShift] ");
+		if((hid_modifier & 0x01) > 0)
+			sb.append("[LCtrl] ");
+		
+		return sb.toString();
+	}
 }
