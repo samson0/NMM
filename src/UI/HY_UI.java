@@ -407,9 +407,12 @@ public class HY_UI {
         jMenuBar.add(jmDiagnostic);
         jframe.setJMenuBar(jMenuBar);    
           
-        jTabbedPane.setBounds(0, 0, jframe.getWidth() - 100, jframe.getHeight() - 100);;
+        jTabbedPane.setBounds(0, 0, jframe.getWidth() - 100, jframe.getHeight() - 100);
+        selected_kb = KB_N4375;
         jTabbedPane.add("64-Key", init_N4375());
+        selected_kb = KB_N4374;
         jTabbedPane.add("Compact Alpha", init_N4374());
+        selected_kb = KB_N4375;
         jTabbedPane.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent arg0) {
@@ -461,7 +464,7 @@ public class HY_UI {
 		try{
 			File f = new File(cfgFilePath);  
 			if(!f.exists()){ 
-				iRet = -1;
+				iRet = -1;				
 				throw new FileNotFoundException(cfgFilePath);  
 			}
 			
@@ -536,26 +539,75 @@ public class HY_UI {
 		}else{
 			retByte = new int[2];
 			retByte[1] = key_table[index];
-			//if(retByte[1] > 0x200)
-			//	retByte[1] &= 0xFF;
 			retByte[0] = key_table[index] + 1;
 		}
 		
 		return retByte;
 	}
 	
-	private void UI_SetKeyCode(String str_key_index) {		
+	/*
+	 * key_index ==> position of RAM buffer
+	 * 
+	 * Return: Memory address
+	 * 		   two bytes(retByte[1] => Modifier key, retByte[0] => HID Usage) -->  key Pxx
+	 * 		   one byte  -->  matrix key 
+	 */
+	private int[] N4374_Key_Pos_Mapping(int index){
+		final int[] key_table = new int[]{
+			0x010, 0x012, 0x014, 0x016, 0x018, 0x01a, 0x01c, 0x01e,
+			0x020, 0x022, 0x024, 0x026, 0x028, 0x02a, 0x02c, 0x02e,
+			0x030, 0x032, 0x034, 0x036, 0x038, 0x03a, 0x03c, 0x03e,
+			0x040, 0x042, 0x044, 0x046, 0x048, 0x04a, 0x04c, 0x04e,
+			0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000,
+			0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000,
+			0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000,
+			0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000,
+			0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000,
+			0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000,
+			0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000,
+			0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000,
+			0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000,
+			/* Sentinel Tag 1 - 10*/
+			0x275, 0x275, 0x277, 0x278, 0x279, 0x27a, 0x27b, 0x27c, 0x27d, 
+			0x27e 
+		};
+		
+		int[] retByte = null;
+		
+		if((key_table[index] >= 0x100) && (key_table[index] < 0x200)){
+			retByte = new int[1];
+			retByte[0] = key_table[index];
+		}else{
+			retByte = new int[2];
+			retByte[1] = key_table[index];
+			retByte[0] = key_table[index] + 1;
+		}
+		
+		return retByte;
+	}
+	
+	
+	/*
+	 * str_key_index: 0 - 67, key matrix
+	 * 				  68 - 78, Sentinel table tag 1 - 10
+	 * tag_editor_type:0,key matrix
+	 * 				   1,insert Sentinel table tag
+	 * 				   1,modify Sentinel table tag
+	 */
+	private void UI_SetKeyCode(String str_key_index, int tag_editor_type, int modify_tag_pos) {		
 		final JFrame jfKeycode = new JFrame(str_key_index);
 		int key_index = Integer.valueOf(str_key_index);		
 		
 		jframe.setEnabled(false);
 
-		jfKeycode.setSize(450, 680);
+		jfKeycode.setSize(550, 600);
 		jfKeycode.setLayout(null);
+		jfKeycode.setResizable(false);
 		
 		jfKeycode.setVisible(true);
 		jfKeycode.setLocationRelativeTo(null);
-		jfKeycode.setAlwaysOnTop(true);		
+		
+		//jfKeycode.setAlwaysOnTop(true);		
 		jfKeycode.addWindowListener(new WindowListener() {
 
 			@Override
@@ -647,54 +699,54 @@ public class HY_UI {
 		
 		final JCheckBox jcLShift, jcLCtrl, jcLAlt, jcLGUI, jcRShift, jcRCtrl, jcRAlt, jcRGUI;
 		jcLShift = new JCheckBox("Left Shift");
-		jcLShift.setBounds(20, 490, 90, 20);
+		jcLShift.setBounds(420, 200, 150, 20);
 		jcLShift.setEnabled(false);
 		jfKeycode.add(jcLShift);
 	
 		jcLCtrl = new JCheckBox("Left Ctrl");
-		jcLCtrl.setBounds(120, 490, 90, 20);	
+		jcLCtrl.setBounds(420, 230, 150, 20);	
 		jcLCtrl.setEnabled(false);
 		jfKeycode.add(jcLCtrl);
 	
 		jcLAlt = new JCheckBox("Left Alt");
-		jcLAlt.setBounds(210, 490, 90, 20);	
+		jcLAlt.setBounds(420, 260, 150, 20);	
 		jcLAlt.setEnabled(false);
 		jfKeycode.add(jcLAlt);
 		
 		jcLGUI = new JCheckBox("Left GUI");
-		jcLGUI.setBounds(300, 490, 90, 20);
+		jcLGUI.setBounds(420, 290, 150, 20);
 		jcLGUI.setEnabled(false);
 		jfKeycode.add(jcLGUI);
 	
 		jcRShift = new JCheckBox("Right Shift");
-		jcRShift.setBounds(20, 520, 90, 20);
+		jcRShift.setBounds(420, 320, 150, 20);
 		jcRShift.setEnabled(false);
 		jfKeycode.add(jcRShift);				
 	
 		jcRCtrl = new JCheckBox("Right Ctrl");
-		jcRCtrl.setBounds(120, 520, 90, 20);
+		jcRCtrl.setBounds(420, 350, 150, 20);
 		jcRCtrl.setEnabled(false);
 		jfKeycode.add(jcRCtrl);
 	
 		jcRAlt = new JCheckBox("Right Alt");
-		jcRAlt.setBounds(210, 520, 90, 20);	
+		jcRAlt.setBounds(420, 380, 150, 20);	
 		jcRAlt.setEnabled(false);
 		jfKeycode.add(jcRAlt);
 		
 		jcRGUI = new JCheckBox("Right GUI");
-		jcRGUI.setBounds(300, 520, 90, 20);
+		jcRGUI.setBounds(420, 410, 150, 20);
 		jcRGUI.setEnabled(false);
 		jfKeycode.add(jcRGUI);
 		
 		//-------------------------------------------------
 		JButton bntOK = new JButton("OK");
-		bntOK.setBounds(100, 570, 80, 30);
+		bntOK.setBounds(100, 500, 80, 30);
 		bntOK.addActionListener(new ActionListener()
 		{
 			  public void actionPerformed(ActionEvent e)
 			  {			
 				  int[] key_code = N4375_Key_Pos_Mapping(key_index);
-				  int i = 0, j = 0;
+				  int i = 0;
 				  
 				  //System.out.println("key_index = " + key_index);
 				  
@@ -702,58 +754,85 @@ public class HY_UI {
 					  if(key_code[0] >= 0x275){//Sentinel Tag
 						  // Find offset of each Tag & get total bytes
 						  
-						  int pos = key_index - 68;
+						  if( atsMappingSequence.getValueAt(0, 0) != null ){
+  
+							  int pos = key_index - 68;
 						  
-						  TagKeyN4375[pos][TagKeyLenN4375[pos]] = 0;
-						  if(jcLCtrl.isSelected())
-							  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x01;
-						  if(jcLShift.isSelected())
-							  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x02;
-						  if(jcLAlt.isSelected())
-							  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x04;
-						  if(jcLGUI.isSelected())
-							  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x08;
+							  if(tag_editor_type == 1){//insert
+								  TagKeyN4375[pos][TagKeyLenN4375[pos]] = 0;
+								  if(jcLCtrl.isSelected())
+									  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x01;
+								  if(jcLShift.isSelected())
+									  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x02;
+								  if(jcLAlt.isSelected())
+									  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x04;
+								  if(jcLGUI.isSelected())
+									  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x08;
 					  
-						  if(jcRCtrl.isSelected())
-							  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x10;
-						  if(jcRShift.isSelected())
-							  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x20;
-						  if(jcRAlt.isSelected())
-							  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x40;
-						  if(jcRGUI.isSelected())
-							  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x80;
-						  TagKeyN4375[pos][TagKeyLenN4375[pos] + 1] = (byte) (Byte.parseByte(((String)atsMappingSequence.getValueAt(0, 2)).substring(2, 4), 16) & 0xff);;//HID Usage
+								  if(jcRCtrl.isSelected())
+									  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x10;
+								  if(jcRShift.isSelected())
+									  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x20;
+								  if(jcRAlt.isSelected())
+									  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x40;
+								  if(jcRGUI.isSelected())
+									  TagKeyN4375[pos][TagKeyLenN4375[pos]] |= 0x80;
+								  TagKeyN4375[pos][TagKeyLenN4375[pos] + 1] = (byte) (Byte.parseByte(((String)atsMappingSequence.getValueAt(0, 2)).substring(2, 4), 16) & 0xff);;//HID Usage
 						  
-						  TagKeyLenN4375[pos] += 2;
+								  TagKeyLenN4375[pos] += 2;
 						  
-						  for(i = pos + 1; i < TagOffsetN4375.length; i++){
-							  TagOffsetN4375[i] += 2;
-						  }
+								  for(i = pos + 1; i < TagOffsetN4375.length; i++){
+									  TagOffsetN4375[i] += 2;
+								  }
 						  
-						  for(i = 0; i < SelectedTagN4375.length; i++){
-							  if(SelectedTagN4375[i] == (pos + 1)){
-								  TagTotalLen += 1;
-								  break;
+								  for(i = 0; i < SelectedTagN4375.length; i++){
+									  if(SelectedTagN4375[i] == pos){
+										  TagTotalLen += 1;
+										  break;
+									  }
+								  }
+							  }else if(tag_editor_type == 2){//modify modify_tag_pos
+								  TagKeyN4375[pos][modify_tag_pos*2] = 0;
+								  if(jcLCtrl.isSelected())
+									  TagKeyN4375[pos][modify_tag_pos*2] |= 0x01;
+								  if(jcLShift.isSelected())
+									  TagKeyN4375[pos][modify_tag_pos*2] |= 0x02;
+								  if(jcLAlt.isSelected())
+									  TagKeyN4375[pos][modify_tag_pos*2] |= 0x04;
+								  if(jcLGUI.isSelected())
+									  TagKeyN4375[pos][modify_tag_pos*2] |= 0x08;
+						  
+								  if(jcRCtrl.isSelected())
+									  TagKeyN4375[pos][modify_tag_pos*2] |= 0x10;
+								  if(jcRShift.isSelected())
+									  TagKeyN4375[pos][modify_tag_pos*2] |= 0x20;
+								  if(jcRAlt.isSelected())
+									  TagKeyN4375[pos][modify_tag_pos*2] |= 0x40;
+								  if(jcRGUI.isSelected())
+									  TagKeyN4375[pos][modify_tag_pos*2] |= 0x80;
+								  TagKeyN4375[pos][modify_tag_pos*2 + 1] = (byte) (Byte.parseByte(((String)atsMappingSequence.getValueAt(0, 2)).substring(2, 4), 16) & 0xff);;//HID Usage							    
+							    
 							  }
-						  }
 						  
-						  /*
-						  for(i = 0; i < TagKeyLenN4375.length; i++){
-							  System.out.println(String.format("TagKeyLenN4375[%d] = %02X" , i, TagKeyLenN4375[i]));
-						  }
 						  
-						  for(i = 0; i < TagKeyN4375.length; i++){
-							  for(j = 0; j < TagKeyN4375[0].length; j++)
+							  /*
+						  	  for(i = 0; i < TagKeyLenN4375.length; i++){
+							  	System.out.println(String.format("TagKeyLenN4375[%d] = %02X" , i, TagKeyLenN4375[i]));
+						      }
+						  
+						  	  for(i = 0; i < TagKeyN4375.length; i++){
+							  	for(j = 0; j < TagKeyN4375[0].length; j++)
 								  System.out.println(String.format("TagKeyN4375[%d][%d] = %02X" , i, j, TagKeyN4375[i][j]));
-						  }
+						  		}
 						  */
 			  
-						  if(tableTag != null)
-							  N4375_Sentinel_Show_Tag_Table(tableTag, pos);
+							  if(tableTag != null)
+								  N4375_Sentinel_Show_Tag_Table(tableTag, pos);
 						  
-						  if(labTagMsg != null)
-							  labTagMsg.setText("Remaining Size: " + (28 - TagTotalLen) + " bytes");
+							  if(labTagMsg != null)
+								  labTagMsg.setText("Remaining Size: " + (28 - TagTotalLen) + " bytes");
 						  
+						  	}
 					  }else{// Key matrix
 					  
 						  keymap_buf[key_code[0]] = (byte) (Byte.parseByte(((String)atsMappingSequence.getValueAt(0, 2)).substring(2, 4), 16) & 0xff);
@@ -783,23 +862,27 @@ public class HY_UI {
 				  }
 				  
 				  jfKeycode.dispose();
-					
-				  jframe.setEnabled(true);
-				  jframe.requestFocus();
+				
+				  if(key_index < 68){
+					  jframe.setEnabled(true);
+					  jframe.requestFocus();
+				  }
 			  }
 		});
 		jfKeycode.add(bntOK);
 		
 		JButton bntCancel = new JButton("Cancel");
-		bntCancel.setBounds(220, 570, 100, 30);
+		bntCancel.setBounds(220, 500, 100, 30);
 		bntCancel.addActionListener(new ActionListener()
 		{
 			  public void actionPerformed(ActionEvent e)
 			  {
 					jfKeycode.dispose();
 					
-					jframe.setEnabled(true);
-					jframe.requestFocus();
+					if(key_index < 68){
+						jframe.setEnabled(true);
+						jframe.requestFocus();
+					}
 			  }
 		});
 		jfKeycode.add(bntCancel);		
@@ -812,124 +895,76 @@ public class HY_UI {
 			//System.out.println("get_key_code[0] = " + get_key_code[0]);
 			//System.out.println("get_key_code[1] = " + get_key_code[1]);
 			//System.out.println("keymap_buf[get_key_code[0]] = " + keymap_buf[get_key_code[0]]); 
-			for(int i = 0; i < tableKeyCode.getRowCount(); i++){	
-				//System.out.println("From table = " + (byte)(Integer.parseInt(((String)tableKeyCode.getValueAt(i, 1)).substring(2, 4), 16)));
-				if( keymap_buf[get_key_code[0]] == (byte)(Integer.parseInt(((String)tableKeyCode.getValueAt(i, 1)).substring(2, 4), 16))){				
-					//System.out.println("i = " + i);				
-					tableMappingSequence.setValueAt("1", 0, 0);
-					tableMappingSequence.setValueAt((String)tableKeyCode.getValueAt(i, 0), 0, 1);
-					tableMappingSequence.setValueAt((String)tableKeyCode.getValueAt(i, 1), 0, 2);
+				for(int i = 0; i < tableKeyCode.getRowCount(); i++){	
+					//System.out.println("From table = " + (byte)(Integer.parseInt(((String)tableKeyCode.getValueAt(i, 1)).substring(2, 4), 16)));
+					if( keymap_buf[get_key_code[0]] == (byte)(Integer.parseInt(((String)tableKeyCode.getValueAt(i, 1)).substring(2, 4), 16))){				
+						//System.out.println("i = " + i);				
+						tableMappingSequence.setValueAt("1", 0, 0);
+						tableMappingSequence.setValueAt((String)tableKeyCode.getValueAt(i, 0), 0, 1);
+						tableMappingSequence.setValueAt((String)tableKeyCode.getValueAt(i, 1), 0, 2);
 				
-					break;
+						break;
+					}
 				}
+			
+				if(get_key_code.length == 2){
+				
+					if((keymap_buf[get_key_code[1]] & 0x01) > 0)
+						jcLCtrl.setSelected(true);
+					else
+						jcLCtrl.setSelected(false);
+				
+					if((keymap_buf[get_key_code[1]] & 0x02) > 0)
+						jcLShift.setSelected(true);	
+					else
+						jcLShift.setSelected(false);	
+				
+					if((keymap_buf[get_key_code[1]] & 0x04) > 0)
+						jcLAlt.setSelected(true);
+					else
+						jcLAlt.setSelected(false);
+				
+					if((keymap_buf[get_key_code[1]] & 0x08) > 0)
+						jcLGUI.setSelected(true);
+					else
+						jcLGUI.setSelected(false);
+				
+					if((keymap_buf[get_key_code[1]] & 0x10) > 0)
+						jcRCtrl.setSelected(true);
+					else
+						jcRCtrl.setSelected(false);
+				
+					if((keymap_buf[get_key_code[1]] & 0x20) > 0)
+						jcRShift.setSelected(true);	
+					else
+						jcRShift.setSelected(false);	
+				
+					if((keymap_buf[get_key_code[1]] & 0x40) > 0)
+						jcRAlt.setSelected(true);
+					else
+						jcRAlt.setSelected(false);
+				
+					if((keymap_buf[get_key_code[1]] & 0x80) > 0)
+						jcRGUI.setSelected(true);
+					else
+						jcRGUI.setSelected(false);
+				}
+			
 			}
 			
 			if(get_key_code.length == 2){
 				jcLShift.setEnabled(true);
-				jcLShift.setSelected(false);
 				jcLCtrl.setEnabled(true);
-				jcLCtrl.setSelected(false);
 				jcLAlt.setEnabled(true);
-				jcLAlt.setSelected(false);
 				jcLGUI.setEnabled(true);
-				jcLGUI.setSelected(false);
 				jcRShift.setEnabled(true);
-				jcRShift.setSelected(false);
 				jcRCtrl.setEnabled(true);
-				jcRCtrl.setSelected(false);
 				jcRAlt.setEnabled(true);
-				jcRAlt.setSelected(false);
 				jcRGUI.setEnabled(true);
-				jcRGUI.setSelected(false);
-				
-				if((keymap_buf[get_key_code[1]] & 0x01) > 0)
-					jcLCtrl.setSelected(true);
-				
-				if((keymap_buf[get_key_code[1]] & 0x02) > 0)
-					jcLShift.setSelected(true);			
-				
-				if((keymap_buf[get_key_code[1]] & 0x04) > 0)
-					jcLAlt.setSelected(true);
-				
-				if((keymap_buf[get_key_code[1]] & 0x08) > 0)
-					jcLGUI.setSelected(true);
-				
-				if((keymap_buf[get_key_code[1]] & 0x10) > 0)
-					jcRCtrl.setSelected(true);
-				
-				if((keymap_buf[get_key_code[1]] & 0x20) > 0)
-					jcRShift.setSelected(true);				
-				
-				if((keymap_buf[get_key_code[1]] & 0x40) > 0)
-					jcRAlt.setSelected(true);
-				
-				if((keymap_buf[get_key_code[1]] & 0x80) > 0)
-					jcRGUI.setSelected(true);
-			}
-			
-			}else{//Sentinel tag				
-				jcLShift.setEnabled(true);
-				jcLShift.setSelected(false);
-				jcLCtrl.setEnabled(true);
-				jcLCtrl.setSelected(false);
-				jcLAlt.setEnabled(true);
-				jcLAlt.setSelected(false);
-				jcLGUI.setEnabled(true);
-				jcLGUI.setSelected(false);
-				jcRShift.setEnabled(true);
-				jcRShift.setSelected(false);
-				jcRCtrl.setEnabled(true);
-				jcRCtrl.setSelected(false);
-				jcRAlt.setEnabled(true);
-				jcRAlt.setSelected(false);
-				jcRGUI.setEnabled(true);
-				jcRGUI.setSelected(false);
 			}
 		}
 		
-		/*
-		DefaultListModel<String> lm = new DefaultListModel<String>();		
-		lm.addElement("123");
-		lm.addElement("abc");
-		lm.addElement("789");
-		
-		JList jList = new JList(lm);
-		jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		jList.addMouseListener(new MouseListener() {
-
-			@Override
-			public void mouseClicked(MouseEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void mouseExited(MouseEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void mousePressed(MouseEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void mouseReleased(MouseEvent arg0) {
-				// TODO Auto-generated method stub
-				System.out.println(jList.getSelectedIndex());
-			}
-			
-		});
-		jfKeycode.add(jList);*/
-	
+		jfKeycode.requestFocus();
 	}
 	
 	
@@ -3262,7 +3297,7 @@ public class HY_UI {
 	private int[][] TagKeyN4375 = new int[10][16];
 	private int[] TagKeyLenN4375 = new int[10];
 	private int[] TagOffsetN4375 = new int[10];
-	private int[] SelectedTagN4375 = new int[10];//start from 1, 0 means NULL
+	private int[] SelectedTagN4375 = new int[10];
 
 	private int TagTotalLen = 0;
 	
@@ -3291,7 +3326,9 @@ public class HY_UI {
 			if((j%2) != 0){
 				for(i = 0; i < TagOffsetN4375.length; i++){
 					if(keymap_buf[j] == TagOffsetN4375[i]){
-						SelectedTagN4375[m++] = i + 1;
+						SelectedTagN4375[m++] = i;
+						
+						break;
 					}
 				}
 			}
@@ -3334,7 +3371,7 @@ public class HY_UI {
 			nonDuplicateArray[i] = (Integer) tempArray[i];
 		}
 		for(i = 0; i < nonDuplicateArray.length; i++){
-			TagTotalLen += TagKeyLenN4375[nonDuplicateArray[i] - 1];
+			TagTotalLen += TagKeyLenN4375[nonDuplicateArray[i]];
 		}
 		TagTotalLen /= 2;
 	
@@ -3356,9 +3393,9 @@ public class HY_UI {
 	
 	
 	private void N4375_Sentinel_SelectTag(int tag, int item){
-		int i = 0, j = 0, m = 0;	
+		int i = 0;	
 		
-		SelectedTagN4375[item] = tag + 1;
+		SelectedTagN4375[item] = tag;
 		
 		//Get total bytes
 		Set<Integer> intSet = new HashSet<Integer>();
@@ -3372,11 +3409,11 @@ public class HY_UI {
 		}
 		TagTotalLen = 0;
 		for(i = 0; i < nonDuplicateArray.length; i++){
-			TagTotalLen += TagKeyLenN4375[nonDuplicateArray[i] - 1];
+			TagTotalLen += TagKeyLenN4375[nonDuplicateArray[i]];
 		}
 		TagTotalLen /= 2;
 		
-		//System.out.println("TagTotalLen = " +  TagTotalLen);
+		System.out.println("TagTotalLen = " +  TagTotalLen);
 	}
 	
 	private int N4375_Sentinel_GetSelectTagEditor(){
@@ -3395,19 +3432,36 @@ public class HY_UI {
 		return selected_tag;
 	}
 	
+	private void N4375_Sentinel_UpdateUI(){
+		int i = 0;
+		
+		N4375_Sentinel_GetSetting();
+		
+		for(i = 0; i < SelectedTagN4375.length; i++){
+			//if(SelectedTagN4375[i] > 0){
+				jcbTag[i].setSelectedIndex(SelectedTagN4375[i]);
+			//}
+		}
+		
+		int tag = N4375_Sentinel_GetSelectTagEditor();
+		
+		N4375_Sentinel_Show_Tag_Table(tableTag, tag);
+	}
+	
 	private JTable tableTag = null;
 	private JLabel labTagMsg = null;
 	private ButtonGroup jbgTag = null;
+	private JComboBox[] jcbTag = null;
 	private void N4375_Sentinel_Table(){
 		int i = 0;
 		
 		JFrame jfSentinelTable = new JFrame();
 		tableTag = new JTable(new AbstractTableSentinelTag());
 		
-		jfSentinelTable.setSize(700, 350);
+		jfSentinelTable.setSize(800, 350);
 		jfSentinelTable.setLayout(null);
 		jfSentinelTable.setResizable(false);
-		jfSentinelTable.setAlwaysOnTop(true);              
+		//jfSentinelTable.setAlwaysOnTop(true);              
   
         jfSentinelTable.setVisible(true);
         jfSentinelTable.setLocationRelativeTo(null);
@@ -3463,7 +3517,7 @@ public class HY_UI {
         JLabel[] labT = new JLabel[10]; 
         for(i = 0; i < labT.length; i++){
         	labT[i] = new JLabel();
-        	labT[i].setBounds(10, 10 + i*height, 120, height);
+        	labT[i].setBounds(10, 10 + i*height, 160, height);
         	jfSentinelTable.add(labT[i]);
         }
         labT[0].setText("MSR Track 1 Start");
@@ -3477,10 +3531,10 @@ public class HY_UI {
         labT[8].setText("Keylock Start");
         labT[9].setText("Keylock End");
         
-        JComboBox[] jcbTag = new JComboBox[10];
+        jcbTag = new JComboBox[10];
         for(i = 0; i < jcbTag.length; i++){
         	jcbTag[i] = new JComboBox<String>();
-        	jcbTag[i].setBounds(130, 10 + i*height, 80, height - 5);
+        	jcbTag[i].setBounds(170, 10 + i*height, 70, height - 5);
         	jcbTag[i].addItem("Tag 1");
         	jcbTag[i].addItem("Tag 2");
         	jcbTag[i].addItem("Tag 3");
@@ -3514,22 +3568,22 @@ public class HY_UI {
             });
         	jfSentinelTable.add(jcbTag[i]);
         }
-        jcbTag[0].setSelectedIndex(SelectedTagN4375[0] - 1);
-        jcbTag[1].setSelectedIndex(SelectedTagN4375[1] - 1);
-        jcbTag[2].setSelectedIndex(SelectedTagN4375[2] - 1);
-        jcbTag[3].setSelectedIndex(SelectedTagN4375[3] - 1);
-        jcbTag[4].setSelectedIndex(SelectedTagN4375[4] - 1);
-        jcbTag[5].setSelectedIndex(SelectedTagN4375[5] - 1);
-        jcbTag[6].setSelectedIndex(SelectedTagN4375[6] - 1);
-        jcbTag[7].setSelectedIndex(SelectedTagN4375[7] - 1);
-        jcbTag[8].setSelectedIndex(SelectedTagN4375[8] - 1);
-        jcbTag[9].setSelectedIndex(SelectedTagN4375[9] - 1);
+        jcbTag[0].setSelectedIndex(SelectedTagN4375[0]);
+        jcbTag[1].setSelectedIndex(SelectedTagN4375[1]);
+        jcbTag[2].setSelectedIndex(SelectedTagN4375[2]);
+        jcbTag[3].setSelectedIndex(SelectedTagN4375[3]);
+        jcbTag[4].setSelectedIndex(SelectedTagN4375[4]);
+        jcbTag[5].setSelectedIndex(SelectedTagN4375[5]);
+        jcbTag[6].setSelectedIndex(SelectedTagN4375[6]);
+        jcbTag[7].setSelectedIndex(SelectedTagN4375[7]);
+        jcbTag[8].setSelectedIndex(SelectedTagN4375[8]);
+        jcbTag[9].setSelectedIndex(SelectedTagN4375[9]);
         
         JPanel jp1 = new JPanel();
 		Border line1 = BorderFactory.createLineBorder(Color.black);
 		jp1.setBorder(BorderFactory.createTitledBorder(line1, "Tag Definition"));
 		jp1.setLayout(null);
-		jp1.setBounds(220, 15, 450, 250);
+		jp1.setBounds(260, 15, 500, 250);
 		
 		JRadioButton[] jrbTag = new JRadioButton[10];	
 		jbgTag = new ButtonGroup();
@@ -3561,13 +3615,13 @@ public class HY_UI {
         };
 			
 		for(i = 0; i < jrbTag.length; i++){
-			int y = 20, x = 15 + i*70;
+			int y = 20, x = 15 + i*75;
 			jrbTag[i] = new JRadioButton();
 			if(i >= 5){
-				x = 15 + (i - 5)*70;
+				x = 15 + (i - 5)*75;
 				y = 40;
 			}	
-			jrbTag[i].setBounds(x, y, 70, 20);
+			jrbTag[i].setBounds(x, y, 75, 20);
 			jrbTag[i].addActionListener(alTag);
 			jbgTag.add(jrbTag[i]);
 			jp1.add(jrbTag[i]);
@@ -3586,7 +3640,7 @@ public class HY_UI {
 		jrbTag[9].setText("Tag 10");
 		
 		JButton bntInsert = new JButton("Insert");
-		bntInsert.setBounds(370, 30, 70, 25);
+		bntInsert.setBounds(390, 30, 100, 25);
 		bntInsert.addActionListener(new ActionListener()
 		{
 			  public void actionPerformed(ActionEvent e)
@@ -3596,8 +3650,7 @@ public class HY_UI {
 					  return;
 				  }				  
 				  
-				  
-				  UI_SetKeyCode(String.valueOf(68 + N4375_Sentinel_GetSelectTagEditor()));//Tag ==> 68 keys + selected tag index
+				  UI_SetKeyCode(String.valueOf(68 + N4375_Sentinel_GetSelectTagEditor()), 1, 0);//Tag ==> 68 keys + selected tag index
 			  }
 		});
 		jp1.add(bntInsert);
@@ -3634,21 +3687,23 @@ public class HY_UI {
 				// TODO Auto-generated method stub
 				
 				if(e.getButton() == MouseEvent.BUTTON3){ 
-						
-					if(tableTag.getValueAt(tableTag.getSelectedRow(), tableTag.getSelectedColumn()) == null)	
+					int row = tableTag.rowAtPoint(e.getPoint());
+					
+					if(tableTag.getValueAt(row, 0) == null)	
 						return;
 					
 					int selected_tag = N4375_Sentinel_GetSelectTagEditor();
+					int key_pos = tableTag.getSelectedRow() * 2;
 					
 					JPopupMenu menu = new JPopupMenu();
 					menu.add(new JMenuItem(new AbstractAction("Modify") {
 			            public void actionPerformed(ActionEvent e) {
-			                
+			            	
+			            	UI_SetKeyCode(String.valueOf(68 + N4375_Sentinel_GetSelectTagEditor()), 2, tableTag.getSelectedRow());
 			            }
 			        }));
 					menu.add(new JMenuItem(new AbstractAction("Delete") {
-			            public void actionPerformed(ActionEvent e) {
-			            	int key_pos = tableTag.getSelectedRow() * 2;
+			            public void actionPerformed(ActionEvent e) {			            	
 			            	int i = 0;
 			            	
 			            	for(i = 0; i < TagOffsetN4375.length; i++){
@@ -3666,7 +3721,7 @@ public class HY_UI {
 							}
 		
 			            	for(i = 0; i < SelectedTagN4375.length; i++){
-			            		if(SelectedTagN4375[i] == (selected_tag + 1)){
+			            		if(SelectedTagN4375[i] == (selected_tag)){
 			            			TagTotalLen -= 1;
 			            			break;
 			            		}
@@ -3710,25 +3765,25 @@ public class HY_UI {
 		JButton bntGet = new JButton("Get");
 		JButton bntSet = new JButton("Set");
 		
-		bntGet.setBounds(300, 280, 60, 30);
+		bntGet.setBounds(340, 280, 60, 30);
 		bntGet.addActionListener(new ActionListener()
 		{
 			  public void actionPerformed(ActionEvent e)
 			  {			  
 				  HY_Command hyCommand = new HY_Command(kb_hid_size);
 				  byte[] rev_data = new byte[kb_hid_size];
-				  if(hyCommand.N4375_Get_Keyboard_Configuration(rev_data)){
-					  System.arraycopy(rev_data, 1, keymap_buf, 0, 0x17);
-
-					  N4375_Update_KB_CFG_UI();
-				  }else{
-					  JOptionPane.showMessageDialog(jfSentinelTable, "Fail to connect to the USB keyboard.");					  
-				  }
+				  if(hyCommand.N4375_Get_Sentinel_Table(Arrays.copyOfRange(keymap_buf, 0x60, 0xB0))){
+					  N4375_Sentinel_UpdateUI();
+					  
+					  
+					  JOptionPane.showMessageDialog(jfSentinelTable, "Get sentinel table successfully.");					  
+				  }else
+					  JOptionPane.showMessageDialog(jfSentinelTable, "Fail to connect to the USB keyboard.");
 			  }
 		});
 		jfSentinelTable.add(bntGet);		
 		
-		bntSet.setBounds(400, 280, 60, 30);
+		bntSet.setBounds(440, 280, 60, 30);
 		bntSet.addActionListener(new ActionListener()
 		{
 			  public void actionPerformed(ActionEvent e)
@@ -3740,21 +3795,21 @@ public class HY_UI {
 				  keymap_buf[0x60] = (byte)(21 + TagTotalLen * 2);
 				  
 				  for(i = 0, m = 0; i < SelectedTagN4375.length; i++){
-					  keymap_buf[0x61 + m++] = (byte)TagOffsetN4375[SelectedTagN4375[i] - 1];					  
-					  keymap_buf[0x61 + m++] = (byte)TagKeyLenN4375[SelectedTagN4375[i] - 1];
-					  for(j = 0; j < TagKeyLenN4375[SelectedTagN4375[i] - 1]; j++){
-						  keymap_buf[0x60 + TagOffsetN4375[SelectedTagN4375[i] - 1] + j] = 
-								  			(byte)TagKeyN4375[SelectedTagN4375[i] - 1][j];
+					  keymap_buf[0x61 + m++] = (byte)TagOffsetN4375[SelectedTagN4375[i]];					  
+					  keymap_buf[0x61 + m++] = (byte)TagKeyLenN4375[SelectedTagN4375[i]];
+					  for(j = 0; j < TagKeyLenN4375[SelectedTagN4375[i]]; j++){
+						  keymap_buf[0x60 + TagOffsetN4375[SelectedTagN4375[i]] + j] = 
+								  			(byte)TagKeyN4375[SelectedTagN4375[i]][j];
 					  }
 				  }
 				  
 				  for(i = 0x60; i <= 0xAF; i++){
 						System.out.println(String.format("keymap_buf[%02X] = %02X" , i, keymap_buf[i]));
 				  }
-				  
-				  /*HY_Command hyCommand = new HY_Command(kb_hid_size);
+				  /*
+				  HY_Command hyCommand = new HY_Command(kb_hid_size);
 
-				  if(hyCommand.N4375_Set_Keyboard_Configuration(Arrays.copyOf(keymap_buf, 0x17))){
+				  if(hyCommand.N4375_Set_Sentinel_Table(Arrays.copyOfRange(keymap_buf, 0x60, 0xB0))){
 					  JOptionPane.showMessageDialog(jfSentinelTable, "Set sentinel table successfully.");					  
 				  }else
 					  JOptionPane.showMessageDialog(jfSentinelTable, "Fail to connect to the USB keyboard.");
@@ -3765,6 +3820,7 @@ public class HY_UI {
 		jfSentinelTable.add(bntSet);
         
         jframe.setEnabled(false);
+        jfSentinelTable.requestFocus();
 	}
 	
 	private int[] N4375_Sentinel_Get_Tag_Offset(){
@@ -3821,7 +3877,9 @@ public class HY_UI {
 			sb.append(String.format(" {0x%02x}", TagKeyN4375[selected_tag][i]));
 			
 			tableTag.setValueAt(sb.toString(), j, 0);
-		}		
+		}	
+		
+		
 	}
 	
 	/*private void N4375_Sentinel_Show_Tag_Table(JTable tableTag, int tag){
@@ -3858,102 +3916,16 @@ public class HY_UI {
 			}				
 		}	
 	}*/
-	
-	
-	private JPanel init_N4374() {//Compact Alpha
-		int i, j;
-		
-		HY_JPanel GImage = new HY_JPanel("pics/N4374-over.gif");
-        GImage.setLayout(null);
-        GImage.setName(N4374_PANEL);
-        
-        JButton[] bntN4374 = new JButton[68];
-        
-        for(i = 0; i < bntN4374.length; i++) {
-        	final int m = i;
-        	bntN4374[i] = new JButton("");// programmed value
-//bntN4375[i].setName("skjdhasjkdhkjasd"); // programmed key code
-        	bntN4374[i].setBorderPainted(false);
-        	bntN4374[i].setFocusPainted(false);
-    		bntN4374[i].setOpaque(false);
-    		bntN4374[i].setForeground(CLR_KEY_BG);
-    		bntN4374[i].setBackground(CLR_KEY_BG);
-    		bntN4374[i].addMouseListener(new MouseListener(){
-    			@Override
-    			public void mouseClicked(MouseEvent e) {
 
-    			}
-    			@Override
-    			public void mousePressed(MouseEvent e) {
-    				//popup.show(e.getComponent(), e.getX(), e.getY());
-    				//System.out.println(bntN4375[m].getName());
-    				
-    				UI_SetKeyCode(bntN4374[m].getName());   				
-    			}
-    			@Override
-    			public void mouseReleased(MouseEvent e) {
-
-    			}
-
-    			@Override
-    			public void mouseEntered(MouseEvent e) {
-    				//bntN4375[m].setBackground(CLR_KEY_MOUSE_IN);
-    				//bntN4375[m].setForeground(CLR_KEY_MOUSE_IN);
-    			}
-
-    			@Override
-    			public void mouseExited(MouseEvent e) {
-    				bntN4374[m].setBackground(CLR_KEY_BG);
-    				bntN4374[m].setForeground(CLR_KEY_BG);
-    			}
-    		});
-    		GImage.add(bntN4374[i]);
-        }
-        
-        // Line 1 - 4 
-        for(j = 0; j < 4; j++) {
-        	for(i = 0; i < 8; i++) {
-        		int d = 0;
-        		if(i == 3 || i == 4)
-        			d = 15;
-        		else if (i >= 5)
-        			d = 15 + 15;
-        		bntN4374[j*8 + i].setBounds(143 + i*55 + d, (52 + 37*j), 44, 26);        		
-        		bntN4374[j*8 + i].setName(String.format("%d", j*8 + i));// key index
-        		//System.out.println(j*8 + i);
-        	}
-        }
-        
-        // Line 5 - 8 
-        for(j = 0; j < 4; j++) {
-        	for(i = 0; i < 9; i++) {
-        		int d = 0, m = i;
-        		if(i >= 3 && i <= 5) {
-        			bntN4374[32 + j*9 + i].setBounds(143 + 3*55 + 15 + (37*(i - 3)), (52 + 37*(j+4)), 25, 26);        		
-            		bntN4374[32 + j*9 + i].setName(String.format("%d", 32 + j*9 + i));// key index      
-            		continue;
-        		}        			
-        		else if (i > 5) {
-        			d = 15 + 15;
-        			m = m - 1;
-        		}
-        		bntN4374[32 + j*9 + i].setBounds(143 + m*55 + d, (52 + 37*(j+4)), 44, 26);        		
-        		bntN4374[32 + j*9 + i].setName(String.format("%d", 32 + j*9 + i));// key index
-        		     		
-        	}
-        }
-		
-		return GImage;
-	}
-	
 	private JPanel init_N4375() {//64-Key
-		int i, j;
+		int i, j;	
+		
 
-		if(load_CFG_File("pics/NCR_64.dat") != 0){
+		if(load_CFG_File("layout/NCR_64.dat") != 0){
 			JOptionPane.showMessageDialog(jframe, "Can't open configuration file");
 		}
 		
-		HY_JPanel GImage = new HY_JPanel("pics/N4375-down.gif");
+		HY_JPanel GImage = new HY_JPanel("layout/N4375-down.gif");
         GImage.setLayout(null);
         GImage.setName(N4375_PANEL);  
         
@@ -3980,7 +3952,7 @@ public class HY_UI {
     				//popup.show(e.getComponent(), e.getX(), e.getY());
     				//System.out.println(bntN4375[m].getName());
     				
-    				UI_SetKeyCode(bntN4375[m].getName());
+    				UI_SetKeyCode(bntN4375[m].getName(), 0, 0);
     			}
     			@Override
     			public void mouseReleased(MouseEvent e) {
@@ -4025,44 +3997,11 @@ public class HY_UI {
         for(j = 0; j < 4; j++) {
         	for(i = 0; i < 9; i++) {
         		int d = 0, m = i;
-        		if(i >= 3 && i <= 5) {
-        			//final int jj = j, ii = i;
-        			
-        			//bntN4375[32 + j*9 + i].setOpaque(false);	
+        		if(i >= 3 && i <= 5) { 			
+
         			bntN4375[32 + j*9 + i].setBounds(143 + 3*55 + 15 + (37*(i - 3)), (52 + 37*(j+4)), 25, 26);        		
             		bntN4375[32 + j*9 + i].setName(String.format("%d", 32 + j*9 + i));// key index
-            		/*
-            		bntN4375[32 + j*9 + i].addMouseListener(new MouseListener(){
-            			@Override
-            			public void mouseClicked(MouseEvent e) {
 
-            			}
-            			@Override
-            			public void mousePressed(MouseEvent e) {
-            				//popup.show(e.getComponent(), e.getX(), e.getY());
-            				//System.out.println(bntN4375[m].getName());
-            				
-            				init_SetKeyCode(bntN4375[32 + jj*9 + ii].getName());
-            			}
-            			@Override
-            			public void mouseReleased(MouseEvent e) {
-
-            			}
-
-            			@Override
-            			public void mouseEntered(MouseEvent e) {            				
-            				
-            				//bntN4375[32 + jj*9 + ii].setOpaque(false);
-            				bntN4375[32 + jj*9 + ii].setIcon(new ImageIcon("pics/N4375_Up_7.jpg")); 
-            				
-            				bntN4375[32 + jj*9 + ii].setText("absd");
-            			}
-
-            			@Override
-            			public void mouseExited(MouseEvent e) {
-            				bntN4375[32 + jj*9 + ii].setIcon(null);
-            			}
-            		});*/
             		continue;
         		}        			
         		else if (i > 5) {
@@ -4075,59 +4014,131 @@ public class HY_UI {
         	}
         }
 
-        /*
-        bntN4375[32 + 3].setBounds(143 + 3*55 + 15 + 10, (52), 25, 26);
-        //bntN4375[35].setIcon(new ImageIcon("pics/N4375_Up_7.jpg"));
-        bntN4375[35].addMouseListener(new MouseListener(){
-			@Override
-			public void mouseClicked(MouseEvent e) {
-
-			}
-			@Override
-			public void mousePressed(MouseEvent e) {
-				//popup.show(e.getComponent(), e.getX(), e.getY());
-				//System.out.println(bntN4375[m].getName());
-				
-				init_SetKeyCode(bntN4375[35].getName());
-			}
-			@Override
-			public void mouseReleased(MouseEvent e) {
-
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e) {
-				//bntN4375[35].setBackground(CLR_KEY_MOUSE_IN);
-				//bntN4375[35].setForeground(CLR_KEY_MOUSE_IN); 
-				System.out.println("I AM");
-				bntN4375[35].setIcon(new ImageIcon("pics/N4375_Down_7.jpg"));
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e) {
-				//bntN4375[35].setBackground(CLR_KEY_BG);
-				//bntN4375[35].setForeground(CLR_KEY_BG);
-				bntN4375[35].setIcon(null);
-			}
-		});*/
-
+        
 		return GImage;
 	}
 	
+	
+	private JPanel init_N4374() {//Compact Alpha
+		int i, j;
+
+		if(load_CFG_File("layout/NCR_Compact.dat") != 0){
+			JOptionPane.showMessageDialog(jframe, "Can't open configuration file");
+		}
+		
+		HY_JPanel GImage = new HY_JPanel("layout/N4374-over.gif");
+        GImage.setLayout(null);
+        GImage.setName(N4374_PANEL);
+        
+        JButton[] bntN4374 = new JButton[106];
+        
+        for(i = 0; i < bntN4374.length; i++) {
+        	final int m = i;
+        	bntN4374[i] = new JButton("");// programmed value
+//bntN4375[i].setName("skjdhasjkdhkjasd"); // programmed key code
+        	bntN4374[i].setBorderPainted(false);
+        	bntN4374[i].setFocusPainted(false);
+    		bntN4374[i].setOpaque(false);
+    		//bntN4374[i].setForeground(CLR_KEY_BG);
+    		bntN4374[i].setBackground(CLR_KEY_BG);
+    		bntN4374[i].addMouseListener(new MouseListener(){
+    			@Override
+    			public void mouseClicked(MouseEvent e) {
+
+    			}
+    			@Override
+    			public void mousePressed(MouseEvent e) {
+    				//popup.show(e.getComponent(), e.getX(), e.getY());
+    				//System.out.println(bntN4375[m].getName());
+    				
+    				UI_SetKeyCode(bntN4374[m].getName(), 0, 0);   				
+    			}
+    			@Override
+    			public void mouseReleased(MouseEvent e) {
+
+    			}
+
+    			@Override
+    			public void mouseEntered(MouseEvent e) {
+    				byte hid_keycode = keymap_buf[N4374_Key_Pos_Mapping(m)[0]];
+    				bntN4374[m].setToolTipText(HID_To_String.HidCodeToString(hid_keycode)
+    										  + String.format(" {0x%02X}", hid_keycode));
+    				
+    				bntN4374[m].setBackground(CLR_KEY_MOUSE_IN);
+    			}
+
+    			@Override
+    			public void mouseExited(MouseEvent e) {
+    				bntN4374[m].setBackground(CLR_KEY_BG);
+    			}
+    		});
+    		GImage.add(bntN4374[i]);
+        }
+        
+        // Line 1 - 4 
+        for(j = 0; j < 4; j++) {
+        	for(i = 0; i < 8; i++) {
+        		bntN4374[j*8 + i].setBounds(147 + i*37, 50 + 30*j, 32, 25);        		
+        		bntN4374[j*8 + i].setName(String.format("%d", j*8 + i));// key index
+        	}
+        }
+        
+        //line 5 - 6
+        for(j = 0; j < 2; j++) {
+        	for(i = 0; i < 16; i++) {
+        		bntN4374[32 + j*16 + i].setBounds(87 + i*30, 177 + 31*j, 25, 25);        		
+        		bntN4374[32 + j*16 + i].setName(String.format("%d", 32 + j*16 + i));// key index
+        	}
+        }
+
+        //Line 7
+        bntN4374[64].setBounds(87, 239, 32, 25); // Caps Lock       		
+		bntN4374[64].setName(String.format("%d", 64));
+		for(i = 0; i < 9; i++) {
+    		bntN4374[65 + i].setBounds(124 + i*30, 239, 25, 25);        		
+    		bntN4374[65 + i].setName(String.format("%d", 65 + i));// key index
+    	}
+		bntN4374[74].setBounds(394, 239, 48, 25); // Enter       		
+		bntN4374[74].setName(String.format("%d", 74));
+		for(i = 0; i < 4; i++) {
+    		bntN4374[75 + i].setBounds(447 + i*30, 239, 25, 25);        		
+    		bntN4374[75 + i].setName(String.format("%d", 75 + i));// key index
+    	}
+		
+		//Line 8
+        bntN4374[79].setBounds(87, 270, 49, 25); // Left Shift     		
+		bntN4374[79].setName(String.format("%d", 79));
+		for(i = 0; i < 9; i++) {
+    		bntN4374[80 + i].setBounds(140 + i*30, 270, 25, 25);        		
+    		bntN4374[80 + i].setName(String.format("%d", 80 + i));// key index
+    	}
+		bntN4374[89].setBounds(410, 270, 32, 25); // Right shift       		
+		bntN4374[89].setName(String.format("%d", 89));
+		for(i = 0; i < 3; i++) {
+    		bntN4374[90 + i].setBounds(447 + i*30, 270, 25, 25);        		
+    		bntN4374[90 + i].setName(String.format("%d", 90 + i));// key index
+    	}
+		
+		//Line 9
+		for(i = 0; i < 4; i++) {
+    		bntN4374[93 + i].setBounds(87 + i*30, 301, 25, 25);        		
+    		bntN4374[93 + i].setName(String.format("%d", 93 + i));// key index
+    	}
+		bntN4374[97].setBounds(207, 301, 115, 25); // Space      		
+		bntN4374[97].setName(String.format("%d", 97));
+		for(i = 0; i < 7; i++) {
+    		bntN4374[98 + i].setBounds(327 + i*30, 301, 25, 25);        		
+    		bntN4374[98 + i].setName(String.format("%d", 98 + i));// key index
+    	}
+		bntN4374[105].setBounds(537, 270, 25, 56); // Enter      		
+		bntN4374[105].setName(String.format("%d", 105));
+		
+		return GImage;
+	}
+	
+	
 	public static void main(String[] args) {
-		/*
-		String property = System.getProperty("java.library.path");
-		System.out.println(property);
-		
-
-		    try {
-		    	System.loadLibrary("libusb4java");
-		    } catch (UnsatisfiedLinkError e) {
-		      System.err.println("Native code library failed to load.\n" + e);
-		      System.exit(1);
-		    }*/
-
-		
+	
 		HY_UI hyUI = new HY_UI();
 		
 		

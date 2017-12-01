@@ -159,6 +159,68 @@ public class HY_Command {
 		return bRet;
 	}
 	
+	public boolean N4375_Set_Sentinel_Table(byte[] key_buf){
+
+		if(!this.bUsbCon)
+			return false;
+
+		boolean bRet = true;
+		
+		byte[] send_buf = new byte[this.hid_size];
+		byte[] rev_data = new byte[this.hid_size];
+		Arrays.fill(send_buf, (byte)0);
+		
+		send_buf[0] = 0x05;// command
+		send_buf[2] = 0x10;// length
+		
+		for(int i = 0; i < 5; i++){
+			send_buf[1] =(byte)(0x60 + i * 0x10);
+			System.arraycopy(key_buf, i * 0x10, send_buf, 3, 0x10);
+			
+			rev_data[0] = 0;
+			if(hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data)){    		
+	   			if(rev_data[0] != 0x05){
+	   				bRet = false;
+	   				
+	   				break;
+	   			}	   				
+	    	}
+		}
+		
+		return bRet;
+	}
+	
+	public boolean N4375_Get_Sentinel_Table(byte[] key_buf){
+
+		if(!this.bUsbCon)
+			return false;
+
+		boolean bRet = true;
+		
+		byte[] send_buf = new byte[this.hid_size];
+		byte[] rev_data = new byte[this.hid_size];
+		Arrays.fill(send_buf, (byte)0);
+		
+		send_buf[0] = 0x04;// command
+		
+		for(int i = 0; i < 5; i++){
+			send_buf[1] =(byte)(0x60 + i * 0x10);			
+			
+			rev_data[0] = 0;
+			if(hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data)){    		
+	   			if(rev_data[0] != 0x04){
+	   				bRet = false;
+	   				
+	   				break;
+	   			}else{
+	   				System.arraycopy(rev_data, 2, key_buf, i * 0x10, 0x10);
+	   			}
+	    	}
+		}
+		
+		return bRet;
+	}
+	
 	/*
 	 * @Para: byte ctl
 	 *  0x00: No operation
