@@ -2,13 +2,13 @@ package UI;
 
 import javax.swing.table.AbstractTableModel;
 
-public class AbstractTableSelectionKeyCode extends AbstractTableModel {
+public class AbstractTableSelectionKeyCodeP extends AbstractTableModel{
 	
 	String[] head = {"", ""}; 
-	Object[][] data = new Object[220][head.length];
+	Object[][] data = new Object[229][head.length];
 	Class<?>[] typeArray = { Object.class, Object.class};
 	
-	public AbstractTableSelectionKeyCode(){
+	public AbstractTableSelectionKeyCodeP(){
 		int i = 0;
 		
 		data[0][0] = "Null key";
@@ -16,16 +16,16 @@ public class AbstractTableSelectionKeyCode extends AbstractTableModel {
 		
 		for(i = 1; i <= 26; i++){
 			//data[i][0] = String.format("%c %c", (i - 1) + 'a', (i - 1) + 'A');
-			data[i][0] = HID_To_String.HidCodeToString((byte)((i - 1) + 4));
+			data[i][0] = HID_To_String.HidCodeToStringPKey((byte)((i - 1) + 4));
 			data[i][1] = String.format("0x%02X", (i - 1) + 4);
 			
 		}
 		
 		//0x1B - 0xA4
-		for(i = 27; i <= 219; i++){			
-			data[i][0] = HID_To_String.HidCodeToString((byte)(i + 3));
+		for(i = 27; i <= 228; i++){			
+			data[i][0] = HID_To_String.HidCodeToStringPKey((byte)(i + 3));
 			data[i][1] = new String(String.format("0x%02X", i + 3));
-		}	
+		}		
 	}
 	
     public int getColumnCount() {  

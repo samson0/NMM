@@ -92,6 +92,126 @@ public class HY_Command {
 		return bRet;
 	}
 	
+	public boolean N4375_Enter_Test_Mode(){
+
+		if(!this.bUsbCon)
+			return false;
+
+		boolean bRet = false;
+		
+		byte[] send_buf = new byte[this.hid_size];
+		byte[] rev_data = new byte[this.hid_size];
+		Arrays.fill(send_buf, (byte)0);
+    	
+    	send_buf[0] = (byte)0xA0;// command
+    	send_buf[1] = (byte)0x54;
+    	send_buf[2] = (byte)0x53;
+    	send_buf[3] = (byte)0x54;
+    	
+    	if(hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data)){    		
+    		bRet = true;
+    	}
+    	
+    	hyUSB.usb_Close();
+		
+		return bRet;
+	}
+	
+	public boolean N4375_Exit_Test_Mode(){
+
+		if(!this.bUsbCon)
+			return false;
+
+		boolean bRet = false;
+		
+		byte[] send_buf = new byte[this.hid_size];
+		byte[] rev_data = new byte[this.hid_size];
+		Arrays.fill(send_buf, (byte)0);
+    	
+    	send_buf[0] = (byte)0xA0;// command
+    	send_buf[1] = (byte)0x4e;
+    	send_buf[2] = (byte)0x52;
+    	send_buf[3] = (byte)0x4d;
+    	
+    	if(hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data)){    		
+    		bRet = true;
+    	}
+    	
+    	hyUSB.usb_Close();
+		
+		return bRet;
+	}
+	
+	public boolean N4375_Load_Factory_Setting(){
+		int i = 0;
+		
+		if(!this.bUsbCon)
+			return false;
+
+		boolean bRet = true;
+		
+		byte[] send_buf = new byte[this.hid_size];
+		byte[] rev_data = new byte[this.hid_size];
+		Arrays.fill(send_buf, (byte)0);
+		
+		send_buf[0] = (byte)0xFF;
+		bRet = hyUSB.Write_Command_Feature(send_buf, this.hid_size);
+		
+		if(bRet){
+			send_buf[0] = (byte)0x02;
+			bRet = hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data);    		
+		}
+		
+		if(bRet){
+			send_buf[0] = (byte)0x04;
+			for(i = 0; i < 14; i++){
+				send_buf[1] = (byte)(0x20 + i*0x10);
+				bRet = hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data);
+				if(!bRet)
+					break;
+			}
+		}
+		
+		if(bRet){
+			send_buf[0] = (byte)0x08;
+			for(i = 0; i < 8; i++){
+				send_buf[1] = (byte)(i*0x10);
+				bRet = hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data);
+				if(!bRet)
+					break;
+			}
+		}
+   	
+    	hyUSB.usb_Close();
+		
+		return bRet;
+	}
+	
+	public boolean N4375_Reset(){
+
+		if(!this.bUsbCon)
+			return false;
+
+		boolean bRet = false;
+		
+		byte[] send_buf = new byte[this.hid_size];
+		byte[] rev_data = new byte[this.hid_size];
+		Arrays.fill(send_buf, (byte)0);
+    	
+    	send_buf[0] = (byte)0xA0;// command
+    	send_buf[1] = (byte)0x52;
+    	send_buf[2] = (byte)0x53;
+    	send_buf[3] = (byte)0x54;
+    	
+    	if(hyUSB.NCR_SendUsbCmd(send_buf, send_buf.length, rev_data)){    		
+    		bRet = true;
+    	}
+    	
+    	hyUSB.usb_Close();
+		
+		return bRet;
+	}
+	
 	public boolean N4375_Get_Status(byte[] keylockStatus, byte[] cashDrawer){
 
 		if(!this.bUsbCon)

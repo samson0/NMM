@@ -76,7 +76,7 @@ public class HY_USB {
 	            
 	            if ((descriptor.idVendor() == NCR_VID) && 
 	            	(descriptor.idProduct() == NCR_PID_NCR_N4374) || (descriptor.idProduct() == NCR_PID_NCR_N4375)) {
-	            	System.out.println(String.format("Find device, VID=0x%04X,PID=0x%04X",descriptor.idVendor(), descriptor.idProduct()));
+	            	//System.out.println(String.format("Find device, VID=0x%04X,PID=0x%04X",descriptor.idVendor(), descriptor.idProduct()));
 	                
 	            	this.myDeviceHandle = LibUsb.openDeviceWithVidPid(null, descriptor.idVendor(), descriptor.idProduct());           	        	
 
@@ -254,7 +254,7 @@ public class HY_USB {
                                                   (byte) (LibUsb.REQUEST_TYPE_CLASS | LibUsb.RECIPIENT_INTERFACE),/*0x21*/
                                                   (byte) 0x09, (short) 0x0301, (short) 1, buffer, TIMEOUT);
 
-           System.out.printf(String.format("transfered = %d", transfered));
+           //System.out.printf(String.format("transfered = %d", transfered));
            
            if (transfered < 0)
                return false;			   
@@ -351,10 +351,10 @@ public class HY_USB {
 		   
 			System.arraycopy(message, 0, rev_data, 0, message[1] + 2);
 			
-			for(int i = 0; i < message[1] + 2; i++){
+			/*for(int i = 0; i < message[1] + 2; i++){
 				System.out.printf(String.format("%02X", rev_data[i]));
 			}
-			System.out.println("");
+			System.out.println("");*/
         }    
 	
 	    if ( (command != null) && (rev_data != null) )
@@ -374,18 +374,18 @@ public class HY_USB {
 		buffer.rewind();   
 		buffer.put(command, 0, cmdlen); 
         buffer.rewind();
-        
+        /*
         System.out.println(String.format("0x%02X", buffer.get(0)));
 	    System.out.println(String.format("0x%02X", buffer.get(1)));
 	    System.out.println(String.format("0x%02X", buffer.get(2)));
 	    System.out.println(String.format("0x%02X", buffer.get(3)));
 	    System.out.println(String.format("buffer size = %d", buffer.capacity()));
-    		
+    	*/	
         transfered = LibUsb.controlTransfer(this.myDeviceHandle, 
     								(byte) (LibUsb.REQUEST_TYPE_CLASS | LibUsb.RECIPIENT_INTERFACE),/*0x21*/
     								(byte)0x09, (short)0x300, (short)0, buffer, TIMEOUT);	
 
-        System.out.printf(String.format("transfered = %d", transfered));
+        //System.out.printf(String.format("transfered = %d", transfered));
 
         
     	/*if (transfered < 0)
@@ -414,12 +414,12 @@ public class HY_USB {
 		    buffer.get(rev_data);						
 		}
     	
-    	
+    	/*
     	System.out.println("Receive data:");
     	for(int i = 0; i < rev_data.length; i++){
 			System.out.printf(String.format("%02X", rev_data[i]));
 		}
-		System.out.println("");
+		System.out.println("");*/
     		
     	return true;
     }
@@ -464,7 +464,7 @@ public class HY_USB {
 		}else{   
 		   System.arraycopy(rev_dat, 4, ret_dat, 0, rev_dat[1] - 3);	  
 		   sRet = new String(ret_dat); 
-		   System.out.println(sRet);	
+		   //System.out.println(sRet);	
         }			
 		
 		return sRet;
